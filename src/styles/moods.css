@@ -1,0 +1,30 @@
+/* Per-module accent "moods" — layered on top of the brand base palette.
+   Applied via `data-mood="expenses|dog|car|meds"` on each module's route wrapper. */
+
+[data-mood='expenses'] {
+  --mood-accent: #10b981;
+  --mood-accent-2: #334155;
+  --mood-surface: #0f172a;
+  --mood-border: #1e293b;
+}
+
+[data-mood='dog'] {
+  --mood-accent: #a8471f;
+  --mood-accent-2: #1a1a1a;
+  --mood-surface: #2a2118;
+  --mood-border: #4a3a28;
+}
+
+[data-mood='car'] {
+  --mood-accent: #ee1c25;
+  --mood-accent-2: #f59e0b;
+  --mood-surface: #14100c;
+  --mood-border: #2a2420;
+}
+
+[data-mood='meds'] {
+  --mood-accent: #14b8a6;
+  --mood-accent-2: #f8fafc;
+  --mood-surface: #0f2027;
+  --mood-border: #1c3438;
+}

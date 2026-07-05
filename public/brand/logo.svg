@@ -1,0 +1,5 @@
+<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tend">
+  <rect x="0" y="0" width="40" height="40" rx="11" fill="#278276"/>
+  <path d="M11 13.5C11 12.6716 11.6716 12 12.5 12H27.5C28.3284 12 29 12.6716 29 13.5C29 14.3284 28.3284 15 27.5 15H22V27.5C22 28.3284 21.3284 29 20.5 29C19.6716 29 19 28.3284 19 27.5V15H12.5C11.6716 15 11 14.3284 11 13.5Z" fill="#ffffff"/>
+  <text x="50" y="27" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" fill="#f1f5f9">Tend</text>
+</svg>

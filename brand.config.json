@@ -1,0 +1,18 @@
+{
+  "appName": "Tend",
+  "shortName": "Tend",
+  "tagline": "Everything you look after, in one place.",
+  "logo": { "src": "/brand/logo.svg", "alt": "Tend" },
+  "favicon": "/brand/favicon.svg",
+  "icon192": "/brand/icon-192.png",
+  "icon512": "/brand/icon-512.png",
+  "iconMaskable": "/brand/icon-maskable.png",
+  "font": { "family": "Inter", "url": "" },
+  "colors": {
+    "brandPrimary": "#278276",
+    "brandSecondary": "#12303a",
+    "brandAccent": "#e0a83a",
+    "brandOnPrimary": "#ffffff"
+  },
+  "_alternateNames": ["Upkeep", "Cadence", "Orbit", "Hearth"]
+}
