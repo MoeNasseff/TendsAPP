@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import type { ReminderChannel, ReminderSourceModule } from '../lib/types'
+import { MOOD_BY_MODULE } from '../lib/moods'
 import { Portal } from './Portal'
 
 const CHANNELS: ReminderChannel[] = ['telegram', 'push', 'email', 'whatsapp']
@@ -67,7 +68,14 @@ export function ReminderPicker({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      {/* Portal renders into document.body, which is outside the MoodLayout
+          wrapper the calling page sits in — so the module accent has to be
+          re-established here from sourceModule. */}
+      <div
+        data-mood={MOOD_BY_MODULE[sourceModule]}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      >
         <div className="glass w-full max-w-sm rounded-2xl border p-6" onClick={(e) => e.stopPropagation()}>
           <h3 className="mb-4 text-base font-semibold text-slate-100">Set reminder — {defaultTitle}</h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">

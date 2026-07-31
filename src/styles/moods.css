@@ -1,6 +1,23 @@
 /* Per-module accent "moods" — layered on top of the brand base palette.
    Applied via `data-mood="expenses|dog|car|meds"` on each module's route wrapper. */
 
+/* Neutral fallback for app-level chrome that belongs to no single module and
+   therefore never sits inside a [data-mood] scope: InstallPrompt and the
+   Header's NotificationsPanel, plus anything rendered through Portal (which
+   mounts into document.body, escaping the wrapper entirely).
+
+   Without this the mood-accent utilities on those components resolve against an
+   undefined variable, which computes to `unset` — coloured buttons rendered
+   with transparent backgrounds and white text on them. Module-scoped rules
+   below still override it: they match a nearer ancestor, so the closer
+   declaration wins by inheritance rather than specificity. */
+:root {
+  --mood-accent: var(--brand-primary);
+  --mood-accent-2: var(--brand-accent);
+  --mood-surface: var(--brand-secondary);
+  --mood-border: #1e293b;
+}
+
 [data-mood='expenses'] {
   --mood-accent: #10b981;
   --mood-accent-2: #334155;
