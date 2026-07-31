@@ -1,5 +1,19 @@
 import { Bell } from 'lucide-react'
 import { useDueReminders } from '../hooks/useDueReminders'
+import type { ReminderSourceModule } from '../lib/types'
+
+// Maps a reminder to its module's accent palette in styles/moods.css. Note the
+// key mismatch: the DB enum says 'expense', the mood/route key is 'expenses'.
+// Setting data-mood per card scopes --mood-accent to that card, so the existing
+// mood-accent utilities below colour themselves per module. Without it the vars
+// resolve to nothing at all — DueReminderHost renders from AppShell, outside
+// every MoodLayout wrapper.
+const MOOD_BY_MODULE: Record<ReminderSourceModule, string> = {
+  dog: 'dog',
+  car: 'car',
+  meds: 'meds',
+  expense: 'expenses',
+}
 
 export function DueReminderHost() {
   const { dueReminders, markDone, snooze, dismissAll } = useDueReminders()
@@ -21,7 +35,11 @@ export function DueReminderHost() {
         </div>
       )}
       {dueReminders.map((r) => (
-        <div key={r.id} className="glass animate-toast-in flex items-start gap-3 rounded-xl border p-4 shadow-xl">
+        <div
+          key={r.id}
+          data-mood={MOOD_BY_MODULE[r.source_module]}
+          className="glass animate-toast-in flex items-start gap-3 rounded-xl border border-l-4 border-l-mood-accent p-4 shadow-xl"
+        >
           {r.image_url ? (
             <img src={r.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
           ) : (
