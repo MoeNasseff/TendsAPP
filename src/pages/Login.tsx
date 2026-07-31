@@ -34,7 +34,14 @@ export function Login() {
 
     setSubmitting(true)
     const { error } = isSignUp
-      ? await supabase.auth.signUp({ email: email.trim(), password })
+      ? await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          // Without this, Supabase builds the confirmation link from the
+          // project's Site URL, which sends every device to localhost. Using
+          // the live origin keeps the link on whichever host signed up.
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        })
       : await supabase.auth.signInWithPassword({ email: email.trim(), password })
     setSubmitting(false)
 
@@ -58,7 +65,10 @@ export function Login() {
     }
 
     setSubmitting(true)
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() })
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    })
     setSubmitting(false)
 
     if (error) {
