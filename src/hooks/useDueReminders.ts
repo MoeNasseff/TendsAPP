@@ -43,5 +43,14 @@ export function useDueReminders() {
     await load()
   }
 
-  return { dueReminders, markDone, snooze }
+  // 'cancelled' rather than 'done' — dismissing is not completing, and it is
+  // excluded by the due-filter above so the card disappears.
+  async function dismissAll() {
+    const ids = dueReminders.map((r) => r.id)
+    if (ids.length === 0) return
+    await supabase.from('reminders').update({ status: 'cancelled' }).in('id', ids)
+    await load()
+  }
+
+  return { dueReminders, markDone, snooze, dismissAll }
 }

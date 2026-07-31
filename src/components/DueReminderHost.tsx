@@ -2,12 +2,24 @@ import { Bell } from 'lucide-react'
 import { useDueReminders } from '../hooks/useDueReminders'
 
 export function DueReminderHost() {
-  const { dueReminders, markDone, snooze } = useDueReminders()
+  const { dueReminders, markDone, snooze, dismissAll } = useDueReminders()
 
   if (dueReminders.length === 0) return null
 
   return (
     <div className="fixed inset-x-0 top-4 z-[90] mx-auto flex w-full max-w-sm flex-col gap-2 px-4 sm:left-auto sm:right-4 sm:mx-0">
+      {dueReminders.length > 1 && (
+        <div className="glass flex items-center justify-between rounded-xl border px-4 py-2 shadow-xl">
+          <p className="text-xs text-slate-400">{dueReminders.length} reminders due</p>
+          <button
+            type="button"
+            onClick={dismissAll}
+            className="rounded-lg border border-white/10 px-3 py-1 text-xs text-slate-400 hover:bg-white/5 hover:text-slate-200"
+          >
+            Dismiss all
+          </button>
+        </div>
+      )}
       {dueReminders.map((r) => (
         <div key={r.id} className="glass animate-toast-in flex items-start gap-3 rounded-xl border p-4 shadow-xl">
           {r.image_url ? (
