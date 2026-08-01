@@ -9,11 +9,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Channels first, colour derived from them — same reasoning as moods.css:
+   Tailwind needs `rgb(<channels> / <alpha-value>)` for opacity modifiers like
+   `bg-brand-primary/10` to compile at all. Keep these in sync with
+   brand.config.json, which feeds the manifest and theme-color. */
 :root {
-  --brand-primary: #278276;
-  --brand-secondary: #12303a;
-  --brand-accent: #e0a83a;
-  --brand-on-primary: #ffffff;
+  --brand-primary-rgb: 39 130 118;
+  --brand-secondary-rgb: 18 48 58;
+  --brand-accent-rgb: 224 168 58;
+  --brand-on-primary-rgb: 255 255 255;
+
+  --brand-primary: rgb(var(--brand-primary-rgb));
+  --brand-secondary: rgb(var(--brand-secondary-rgb));
+  --brand-accent: rgb(var(--brand-accent-rgb));
+  --brand-on-primary: rgb(var(--brand-on-primary-rgb));
 }
 
 * {

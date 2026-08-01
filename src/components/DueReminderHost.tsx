@@ -36,14 +36,13 @@ export function DueReminderHost() {
           {r.image_url ? (
             <img src={r.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-mood-accent ring-1 ring-inset ring-mood-accent">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-mood-accent/10 text-mood-accent ring-1 ring-inset ring-mood-accent/40">
               <Bell className="h-5 w-5" />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            {/* Solid fill, not a tint: opacity modifiers like bg-mood-accent/20
-                compile to nothing, because Tailwind can't derive an alpha
-                channel from a bare var() colour. */}
+            {/* Solid fill by choice — the tab colour should be unmissable here,
+                not a tint competing with the card's own surface. */}
             <span className="mb-1 inline-block rounded-full bg-mood-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
               {LABEL_BY_MODULE[r.source_module]}
             </span>
