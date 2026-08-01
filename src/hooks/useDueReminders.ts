@@ -5,6 +5,11 @@ import { useRealtime } from './useRealtime'
 import { useToast } from './useToast'
 import type { Reminder } from '../lib/types'
 
+// 'sent' just means an external channel (push/telegram/email) was attempted —
+// the on-site popover still surfaces it until the user acknowledges it
+// (Done/Snooze), so it counts as due too.
+const DUE_STATUSES = ['scheduled', 'sent', 'snoozed']
+
 export function useDueReminders() {
   const { user } = useAuth()
   const showToast = useToast()
@@ -12,13 +17,10 @@ export function useDueReminders() {
 
   const load = useCallback(async () => {
     if (!user) return
-    // 'sent' just means an external channel (push/telegram/email) was
-    // attempted — the on-site popover still surfaces it until the user
-    // acknowledges it (Done/Snooze), so it must be included here too.
     const { data } = await supabase
       .from('reminders')
       .select('*')
-      .in('status', ['scheduled', 'sent', 'snoozed'])
+      .in('status', DUE_STATUSES)
       .lte('fire_at', new Date().toISOString())
       .order('fire_at')
     setDueReminders(data ?? [])
@@ -54,18 +56,25 @@ export function useDueReminders() {
   }
 
   // 'cancelled' rather than 'done' — dismissing is not completing, and it is
-  // excluded by the due-filter above so the cards disappear.
+  // excluded by the due-filter so the cards disappear.
   //
-  // Cleared optimistically: without it the stack sits there unchanged for the
-  // whole round-trip, which reads as a dead button. On failure the cards go
+  // Matched by the same predicate as load() rather than by an id list: with a
+  // few hundred reminders due, `id=in.(...)` built a ~16KB URL and the server
+  // rejected it with 400. This request stays the same size at any count.
+  //
+  // Cleared optimistically, since otherwise the stack sits there unchanged for
+  // the whole round-trip and reads as a dead button. On failure the cards come
   // back and the reason is shown rather than swallowed.
   async function dismissAll() {
     const previous = dueReminders
-    const ids = previous.map((r) => r.id)
-    if (ids.length === 0) return
+    if (previous.length === 0) return
 
     setDueReminders([])
-    const { error } = await supabase.from('reminders').update({ status: 'cancelled' }).in('id', ids)
+    const { error } = await supabase
+      .from('reminders')
+      .update({ status: 'cancelled' })
+      .in('status', DUE_STATUSES)
+      .lte('fire_at', new Date().toISOString())
     if (error) {
       setDueReminders(previous)
       showToast(error.message, 'error')
