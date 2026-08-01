@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRealtime } from './useRealtime'
+import { useToast } from './useToast'
 import type { Reminder } from '../lib/types'
 
 export function useDueReminders() {
   const { user } = useAuth()
+  const showToast = useToast()
   const [dueReminders, setDueReminders] = useState<Reminder[]>([])
 
   const load = useCallback(async () => {
@@ -31,24 +33,44 @@ export function useDueReminders() {
   useRealtime('reminders', load)
 
   async function markDone(id: string) {
-    await supabase.from('reminders').update({ status: 'done' }).eq('id', id)
+    const { error } = await supabase.from('reminders').update({ status: 'done' }).eq('id', id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
     await load()
   }
 
   async function snooze(id: string, minutes: number) {
-    await supabase
+    const { error } = await supabase
       .from('reminders')
       .update({ status: 'snoozed', fire_at: new Date(Date.now() + minutes * 60_000).toISOString() })
       .eq('id', id)
+    if (error) {
+      showToast(error.message, 'error')
+      return
+    }
     await load()
   }
 
   // 'cancelled' rather than 'done' — dismissing is not completing, and it is
-  // excluded by the due-filter above so the card disappears.
+  // excluded by the due-filter above so the cards disappear.
+  //
+  // Cleared optimistically: without it the stack sits there unchanged for the
+  // whole round-trip, which reads as a dead button. On failure the cards go
+  // back and the reason is shown rather than swallowed.
   async function dismissAll() {
-    const ids = dueReminders.map((r) => r.id)
+    const previous = dueReminders
+    const ids = previous.map((r) => r.id)
     if (ids.length === 0) return
-    await supabase.from('reminders').update({ status: 'cancelled' }).in('id', ids)
+
+    setDueReminders([])
+    const { error } = await supabase.from('reminders').update({ status: 'cancelled' }).in('id', ids)
+    if (error) {
+      setDueReminders(previous)
+      showToast(error.message, 'error')
+      return
+    }
     await load()
   }
 

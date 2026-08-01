@@ -1,6 +1,6 @@
 import { Bell } from 'lucide-react'
 import { useDueReminders } from '../hooks/useDueReminders'
-import { MOOD_BY_MODULE } from '../lib/moods'
+import { LABEL_BY_MODULE, MOOD_BY_MODULE } from '../lib/moods'
 
 // Setting data-mood per card scopes --mood-accent to that card, so the
 // mood-accent utilities below colour themselves per module. DueReminderHost
@@ -13,13 +13,15 @@ export function DueReminderHost() {
 
   return (
     <div className="fixed inset-x-0 top-4 z-[90] mx-auto flex w-full max-w-sm flex-col gap-2 px-4 sm:left-auto sm:right-4 sm:mx-0">
+      {/* Deliberately not mood-coloured: this bar spans every module, so it
+          stays neutral and leans on weight/contrast to stand out instead. */}
       {dueReminders.length > 1 && (
-        <div className="glass flex items-center justify-between rounded-xl border px-4 py-2 shadow-xl">
-          <p className="text-xs text-slate-400">{dueReminders.length} reminders due</p>
+        <div className="glass flex items-center justify-between rounded-xl border px-4 py-2.5 shadow-xl">
+          <p className="text-sm font-semibold text-slate-100">{dueReminders.length} reminders due</p>
           <button
             type="button"
             onClick={dismissAll}
-            className="rounded-lg border border-white/10 px-3 py-1 text-xs text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            className="rounded-lg bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-slate-100 ring-1 ring-white/25 transition-colors hover:bg-white/20 hover:ring-white/40"
           >
             Dismiss all
           </button>
@@ -29,17 +31,23 @@ export function DueReminderHost() {
         <div
           key={r.id}
           data-mood={MOOD_BY_MODULE[r.source_module]}
-          className="glass animate-toast-in flex items-start gap-3 rounded-xl border border-l-4 border-l-mood-accent p-4 shadow-xl"
+          className="glass animate-toast-in flex items-start gap-3 rounded-xl border border-l-[6px] border-l-mood-accent p-4 shadow-xl"
         >
           {r.image_url ? (
             <img src={r.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-mood-accent/10 text-mood-accent">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-mood-accent ring-1 ring-inset ring-mood-accent">
               <Bell className="h-5 w-5" />
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-medium text-slate-100">{r.title}</p>
+            {/* Solid fill, not a tint: opacity modifiers like bg-mood-accent/20
+                compile to nothing, because Tailwind can't derive an alpha
+                channel from a bare var() colour. */}
+            <span className="mb-1 inline-block rounded-full bg-mood-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+              {LABEL_BY_MODULE[r.source_module]}
+            </span>
+            <p className="font-semibold text-slate-100">{r.title}</p>
             {r.body && <p className="text-sm text-slate-400">{r.body}</p>}
             <div className="mt-2 flex gap-2">
               <button

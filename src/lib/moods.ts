@@ -14,3 +14,11 @@ export const MOOD_BY_MODULE: Record<ReminderSourceModule, string> = {
   meds: 'meds',
   expense: 'expenses',
 }
+
+/** Tab name a reminder belongs to. Matches the labels in nav-items.ts. */
+export const LABEL_BY_MODULE: Record<ReminderSourceModule, string> = {
+  dog: 'Dog',
+  car: 'Car',
+  meds: 'Meds',
+  expense: 'Expenses',
+}
