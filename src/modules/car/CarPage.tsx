@@ -5,6 +5,8 @@ import { GlassCard } from '../../components/GlassCard'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { SpriteAnimator } from '../../components/sprite/SpriteAnimator'
+import { CAR } from '../../lib/sprite/animations'
 import { formatDate } from '../../lib/format'
 import { useCar } from './useCar'
 import { ServiceForm } from './ServiceForm'
@@ -190,6 +192,13 @@ export function CarPage() {
           setDeleteTarget(null)
         }}
       />
+
+      {/* Headlight blink only. The source art is a product-render catalogue
+          with no drive cycle and no driver, so this is the honest subset of it
+          rather than a slideshow pretending to be motion. */}
+      <div className="flex justify-end">
+        <SpriteAnimator image={CAR.headlightsBlink} scale={0.5} />
+      </div>
     </div>
   )
 }

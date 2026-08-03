@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { Tabs } from '../../components/Tabs'
 import { ReminderPicker } from '../../components/ReminderPicker'
+import { IdleDog } from '../../components/sprite/IdleDog'
 import { formatDateTime, getTimeLeft } from '../../lib/format'
 import { useDog } from './useDog'
 import { DogItemForm } from './DogItemForm'
@@ -179,6 +180,10 @@ export function DogPage() {
           defaultImageUrl={reminderTarget.image_url}
         />
       )}
+
+      {/* The dog loafs here and occasionally walks the width of the strip.
+          Appended after the content so nothing above it moves. */}
+      <IdleDog className="h-28" />
     </div>
   )
 }

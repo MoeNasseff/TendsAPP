@@ -5,6 +5,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { PillSpill } from '../../components/sprite/PillSpill'
 import { useMeds } from './useMeds'
 import { MedForm } from './MedForm'
 import type { Med } from '../../lib/types'
@@ -177,6 +178,12 @@ export function MedsPage() {
           setDeleteTarget(null)
         }}
       />
+
+      {/* Stands still for a long stretch, tips over and spills at random, then
+          clears itself and resets. */}
+      <div className="flex justify-end">
+        <PillSpill />
+      </div>
     </div>
   )
 }

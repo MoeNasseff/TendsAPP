@@ -6,6 +6,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { MoneyField } from '../../components/sprite/MoneyField'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { useExpenses } from './useExpenses'
 import { ExpenseForm } from './ExpenseForm'
@@ -255,6 +256,12 @@ export function ExpensesPage() {
           setDeleteTarget(null)
         }}
       />
+
+      {/* Appended below the existing content rather than layered over it, so
+          nothing above shifts and no bill can ever sit on top of a control. */}
+      <div className="relative h-40 overflow-hidden">
+        <MoneyField />
+      </div>
     </div>
   )
 }
