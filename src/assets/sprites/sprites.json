@@ -1,0 +1,93 @@
+{
+  "dog-walk": {
+    "src": "dog-walk.webp",
+    "frames": 6,
+    "frameWidth": 166,
+    "frameHeight": 200,
+    "columns": 6
+  },
+  "dog-run": {
+    "src": "dog-run.webp",
+    "frames": 6,
+    "frameWidth": 157,
+    "frameHeight": 200,
+    "columns": 6
+  },
+  "dog-sit": {
+    "src": "dog-sit.webp",
+    "frames": 3,
+    "frameWidth": 155,
+    "frameHeight": 200,
+    "columns": 3
+  },
+  "dog-tailWag": {
+    "src": "dog-tailWag.webp",
+    "frames": 5,
+    "frameWidth": 118,
+    "frameHeight": 200,
+    "columns": 5
+  },
+  "dog-turn": {
+    "src": "dog-turn.webp",
+    "frames": 4,
+    "frameWidth": 120,
+    "frameHeight": 200,
+    "columns": 4
+  },
+  "dog-jump": {
+    "src": "dog-jump.webp",
+    "frames": 5,
+    "frameWidth": 122,
+    "frameHeight": 200,
+    "columns": 5
+  },
+  "dog-play": {
+    "src": "dog-play.webp",
+    "frames": 3,
+    "frameWidth": 144,
+    "frameHeight": 200,
+    "columns": 3
+  },
+  "money-flutter": {
+    "src": "money-flutter.webp",
+    "frames": 20,
+    "frameWidth": 174,
+    "frameHeight": 120,
+    "columns": 20
+  },
+  "pills-spill": {
+    "src": "pills-spill.webp",
+    "frames": 30,
+    "frameWidth": 320,
+    "frameHeight": 180,
+    "columns": 30
+  },
+  "car-headlights": {
+    "src": "car-headlights.webp",
+    "frames": 3,
+    "frameWidth": 174,
+    "frameHeight": 150,
+    "columns": 3
+  },
+  "car-doors": {
+    "src": "car-doors.webp",
+    "frames": 6,
+    "frameWidth": 300,
+    "frameHeight": 150,
+    "columns": 6
+  },
+  "car-hood": {
+    "src": "car-hood.webp",
+    "frames": 3,
+    "frameWidth": 221,
+    "frameHeight": 150,
+    "columns": 3
+  },
+  "car-driveBlur": {
+    "src": "car-driveBlur.webp",
+    "frames": 4,
+    "frameWidth": 300,
+    "frameHeight": 150,
+    "columns": 4
+  }
+}

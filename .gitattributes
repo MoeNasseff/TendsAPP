@@ -1,0 +1,5 @@
+# Source sprite contact sheets are large (1.5-2MB each) and change rarely.
+# LFS keeps them out of the repo's object history while staying versioned.
+# The generated strips in src/assets/sprites are committed normally — they are
+# what the app loads, and the deploy build must not depend on fetching LFS.
+assets/images/sprites/**/*.png filter=lfs diff=lfs merge=lfs -text

@@ -9,6 +9,7 @@
     "prebuild": "tsx scripts/gen-brand.ts",
     "build": "tsc -b && vite build",
     "gen-icons": "tsx scripts/gen-icons.ts",
+    "gen-sprites": "tsx scripts/gen-sprites.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

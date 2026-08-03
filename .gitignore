@@ -28,6 +28,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Sprite pipeline byproducts. The generated strips in src/assets/sprites ARE
+# committed — these are the review-only overlays and the unused source archive.
+assets/images/sprites/_verify/
+assets/images/sprites/*.rar
+
 # AI tooling / traces
 .claude/
 .omc/
