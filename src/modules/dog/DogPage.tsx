@@ -7,7 +7,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { Tabs } from '../../components/Tabs'
 import { ReminderPicker } from '../../components/ReminderPicker'
-import { IdleDog } from '../../components/sprite/IdleDog'
+import { RoamingDog } from '../../components/sprite/RoamingDog'
 import { formatDateTime, getTimeLeft } from '../../lib/format'
 import { useDog } from './useDog'
 import { DogItemForm } from './DogItemForm'
@@ -181,9 +181,9 @@ export function DogPage() {
         />
       )}
 
-      {/* The dog loafs here and occasionally walks the width of the strip.
-          Appended after the content so nothing above it moves. */}
-      <IdleDog className="h-28" />
+      {/* Roams the whole page on a fixed, pointer-events-none layer, so it adds
+          no height here and nothing on the page shifts. */}
+      <RoamingDog />
     </div>
   )
 }

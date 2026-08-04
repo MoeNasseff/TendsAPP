@@ -5,7 +5,7 @@ import { GlassCard } from '../../components/GlassCard'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
-import { PillSpill } from '../../components/sprite/PillSpill'
+import { RoamingPills } from '../../components/sprite/RoamingPills'
 import { useMeds } from './useMeds'
 import { MedForm } from './MedForm'
 import type { Med } from '../../lib/types'
@@ -179,11 +179,9 @@ export function MedsPage() {
         }}
       />
 
-      {/* Stands still for a long stretch, tips over and spills at random, then
-          clears itself and resets. */}
-      <div className="flex justify-end">
-        <PillSpill />
-      </div>
+      {/* Spills at a random spot on the page, then fades and reappears
+          elsewhere. Fixed layer, so it adds no height and blocks nothing. */}
+      <RoamingPills />
     </div>
   )
 }

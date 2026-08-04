@@ -45,12 +45,31 @@ import { DOG, PILLS } from '../../lib/sprite/animations'
 | File | Role |
 |---|---|
 | `SpriteAnimator.tsx` | The component |
-| `IdleDog.tsx` · `MoneyField.tsx` · `PillSpill.tsx` | Composed behaviours |
+| `SpriteField.tsx` | The non-blocking overlay layer |
+| `SpriteRoamer.tsx` | Wander-and-rest movement |
+| `RoamingDog` · `RoamingMoney` · `RoamingCar` · `RoamingPills` | One per module tab |
 | `hooks/useSpriteAnimation.ts` | Playback engine |
 | `lib/sprite/spriteUtils.ts` | Pure frame maths |
 | `lib/sprite/animations.ts` | Named clips |
 | `lib/sprite/animationTypes.ts` | Types, manifest-derived sheet ids |
 | `scripts/gen-sprites.ts` | Build-time asset pipeline |
+
+## Placement
+
+Each module tab gets its own subject and only its own: dog on Dog, banknotes on
+Expenses, the Ateca on Car, the pill bottle on Meds.
+
+Nothing module-specific belongs in a shared component. `EmptyState` and
+`PageSkeleton` are used by all four modules, so art placed there leaks onto
+every tab — a dog appeared on Expenses, and the loading dog played on every tab
+switch regardless of destination. Keep those two free of sprites.
+
+Decorations mount on a fixed overlay (`SpriteField`) rather than in the document
+flow, which is what lets them cross the whole page while adding no height and
+shifting nothing. Safety comes from three properties, described in that file:
+`pointer-events: none`, `aria-hidden`, and a `z-20` that sits above content but
+below every control, so a sprite can pass over an input without intercepting a
+click, a keystroke, or a screen reader.
 
 ## Design decisions
 

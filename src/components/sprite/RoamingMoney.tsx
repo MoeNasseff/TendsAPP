@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SpriteAnimator } from './SpriteAnimator'
+import { SpriteField } from './SpriteField'
 import { MONEY } from '../../lib/sprite/animations'
 import { prefersReducedMotion, randomBetween, randomOf } from '../../lib/sprite/spriteUtils'
 import type { Clip } from '../../lib/sprite/animationTypes'
@@ -7,7 +8,7 @@ import type { Clip } from '../../lib/sprite/animationTypes'
 interface Bill {
   id: number
   clip: Clip
-  /** Percentages, so spawn positions stay correct at any container width. */
+  /** Percentages of the field, so spawns stay sensible at any window size. */
   left: number
   top: number
   scale: number
@@ -16,7 +17,7 @@ interface Bill {
   durationMs: number
 }
 
-/** Hard cap from the brief — more than this reads as clutter, not flavour. */
+/** Cap from the brief. More than six reads as clutter rather than flavour. */
 const MAX_BILLS = 6
 
 let nextId = 0
@@ -25,45 +26,37 @@ function spawn(): Bill {
   return {
     id: nextId++,
     clip: randomOf([MONEY.float, MONEY.spin, MONEY.drift]),
-    // Kept away from the horizontal centre band, where cards and figures sit.
-    left: randomOf([randomBetween(0, 18), randomBetween(78, 94)]),
-    top: randomBetween(5, 80),
-    scale: randomBetween(0.28, 0.5),
-    driftX: randomBetween(-40, 40),
-    driftY: randomBetween(-140, -60), // always upward, like paper caught in air
-    durationMs: randomBetween(9000, 16000),
+    // Spawns across the full width, not just the margins. The field cannot take
+    // pointer events, so a bill passing over a card or an input is harmless.
+    left: randomBetween(2, 88),
+    top: randomBetween(10, 92),
+    scale: randomBetween(0.3, 0.55),
+    driftX: randomBetween(-70, 70),
+    driftY: randomBetween(-260, -120), // always upward, like paper on a draught
+    durationMs: randomBetween(7000, 13000),
   }
 }
 
 /**
- * Bills that drift up through the background and fade out, replacing themselves
- * at irregular intervals.
- *
- * Sits behind the content in the stacking order and never takes pointer events,
- * so it cannot cover or block anything interactive. Movement and fade are CSS
- * transitions on transform and opacity — both compositor-only properties — so
- * the drifting costs no main-thread work no matter how many are on screen.
+ * The Expenses tab's drifting banknotes: they appear anywhere on the page,
+ * rise, and fade out, replacing themselves at irregular intervals.
  */
-export function MoneyField({ className = '' }: { className?: string }) {
+export function RoamingMoney() {
   const [bills, setBills] = useState<Bill[]>([])
 
   useEffect(() => {
     if (prefersReducedMotion()) return
-
     let timer: number
     const tick = () => {
       setBills((current) => (current.length >= MAX_BILLS ? current : [...current, spawn()]))
-      timer = window.setTimeout(tick, randomBetween(2500, 6000))
+      timer = window.setTimeout(tick, randomBetween(1200, 3000))
     }
-    timer = window.setTimeout(tick, randomBetween(500, 2000))
+    timer = window.setTimeout(tick, randomBetween(300, 1200))
     return () => clearTimeout(timer)
   }, [])
 
   return (
-    <div
-      aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
-    >
+    <SpriteField>
       {bills.map((bill) => (
         <FloatingBill
           key={bill.id}
@@ -71,7 +64,7 @@ export function MoneyField({ className = '' }: { className?: string }) {
           onDone={() => setBills((current) => current.filter((b) => b.id !== bill.id))}
         />
       ))}
-    </div>
+    </SpriteField>
   )
 }
 
@@ -79,8 +72,8 @@ function FloatingBill({ bill, onDone }: { bill: Bill; onDone: () => void }) {
   const [drifted, setDrifted] = useState(false)
 
   useEffect(() => {
-    // Next frame, so the element paints at its start position before the
-    // transition target is applied — otherwise there is nothing to animate from.
+    // Applied on the next frame so the element paints at its start position
+    // first — otherwise the transition has nothing to animate from.
     const raf = requestAnimationFrame(() => setDrifted(true))
     const done = window.setTimeout(onDone, bill.durationMs)
     return () => {
@@ -91,14 +84,16 @@ function FloatingBill({ bill, onDone }: { bill: Bill; onDone: () => void }) {
 
   return (
     <div
-      className="absolute"
+      className="absolute will-change-transform"
       style={{
         left: `${bill.left}%`,
         top: `${bill.top}%`,
+        // transform and opacity only: both are compositor properties, so any
+        // number of bills drifting at once costs no main-thread layout work.
         transform: drifted
           ? `translate3d(${bill.driftX}px, ${bill.driftY}px, 0)`
           : 'translate3d(0,0,0)',
-        opacity: drifted ? 0 : 0.75,
+        opacity: drifted ? 0 : 0.85,
         transition: `transform ${bill.durationMs}ms linear, opacity ${bill.durationMs}ms ease-in`,
       }}
     >
