@@ -78,6 +78,19 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          {
+            path: 'body',
+            element: <MoodLayout mood="body" />,
+            children: [
+              {
+                index: true,
+                lazy: async () => {
+                  const { BodyPage } = await import('./modules/body/BodyPage')
+                  return { Component: BodyPage }
+                },
+              },
+            ],
+          },
         ],
       },
     ],

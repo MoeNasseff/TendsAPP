@@ -55,6 +55,13 @@
   --mood-border-rgb: 28 52 56;
 }
 
+[data-mood='body'] {
+  --mood-accent-rgb: 167 139 250;
+  --mood-accent-2-rgb: 226 232 240;
+  --mood-surface-rgb: 23 20 38;
+  --mood-border-rgb: 49 42 74;
+}
+
 /* Derived from whichever channel set won above — declared once, inherited by
    every element in that scope. */
 :root,

@@ -136,3 +136,45 @@ export interface Reminder {
   sent_at: string | null
   created_at: string
 }
+
+export type Sex = 'male' | 'female'
+export type UnitSystem = 'metric' | 'imperial'
+
+/** Sites measured on the figure. Keys match body_measurements columns. */
+export type MeasurementSite =
+  | 'neck'
+  | 'shoulder'
+  | 'chest'
+  | 'bust'
+  | 'underbust'
+  | 'waist'
+  | 'belly'
+  | 'hips'
+  | 'thigh'
+  | 'calf'
+  | 'upper_arm'
+  | 'forearm'
+  | 'wrist'
+  | 'inseam'
+
+/**
+ * One measuring session. Every site is optional — a session records whatever
+ * was actually measured. Lengths are centimetres and weight is kilograms
+ * always; imperial is a display conversion only.
+ */
+export type BodyMeasurement = {
+  id: string
+  user_id: string
+  taken_at: string
+  weight_kg: number | null
+  note: string | null
+  created_at: string
+} & { [S in MeasurementSite]: number | null }
+
+/** Body-related fields on profiles, added by 20260804000001. */
+export interface BodyProfile {
+  sex: Sex | null
+  unit_system: UnitSystem
+  height_cm: number | null
+  birth_date: string | null
+}
