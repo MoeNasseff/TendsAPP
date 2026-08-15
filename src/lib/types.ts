@@ -178,3 +178,76 @@ export interface BodyProfile {
   height_cm: number | null
   birth_date: string | null
 }
+
+export type DocumentType = 'receipt' | 'invoice' | 'bill' | 'other'
+export type ExtractionSource = 'mock' | 'ai' | 'manual'
+
+export interface Merchant {
+  id: string
+  user_id: string
+  name: string
+  normalized_name: string
+  branch: string | null
+  created_at: string
+}
+
+export interface Product {
+  id: string
+  user_id: string
+  name: string
+  normalized_name: string
+  brand: string | null
+  size_value: number | null
+  size_unit: string | null
+  created_at: string
+}
+
+export interface Receipt {
+  id: string
+  user_id: string
+  expense_id: string
+  merchant_id: string | null
+  client_ref: string
+  document_type: DocumentType | null
+  image_url: string | null
+  invoice_number: string | null
+  issued_at: string | null
+  due_at: string | null
+  subtotal: number | null
+  tax: number | null
+  total: number | null
+  currency: string
+  extraction_confidence: number | null
+  extraction_source: ExtractionSource | null
+  raw_extraction: unknown | null
+  created_at: string
+}
+
+export interface ReceiptItem {
+  id: string
+  user_id: string
+  receipt_id: string
+  product_id: string | null
+  label: string
+  quantity: number | null
+  unit_price: number | null
+  line_total: number | null
+  discount: number | null
+  category_id: string | null
+  position: number | null
+  created_at: string
+}
+
+export interface PriceObservation {
+  id: string
+  user_id: string
+  product_id: string
+  merchant_id: string | null
+  receipt_item_id: string
+  unit_price: number
+  normalized_unit_price: number | null
+  normalized_unit: string | null
+  observed_at: string
+  currency: string | null
+  created_at: string
+}
