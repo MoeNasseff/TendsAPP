@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, ScanLine, Upload, Check, X, Pencil } from 'lucide-react'
+import { Camera, ScanLine, Upload, Check, X, Pencil, RefreshCw } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Modal } from '../../components/Modal'
 import { Portal } from '../../components/Portal'
+import { useToast } from '../../hooks/useToast'
 import { formatCurrency } from '../../lib/format'
 import { fade, fadeUp } from '../../lib/motion'
+import { saveReceipt } from './useScanSave'
+import type { ExtractedReceipt } from './scannerTypes'
 
 interface LineItem {
   id: string
@@ -14,6 +17,8 @@ interface LineItem {
 
 interface ScannedInvoice {
   id: string
+  clientRef: string
+  file: File | null
   fileName: string
   vendor: string
   date: string
@@ -23,13 +28,17 @@ interface ScannedInvoice {
   confidence: number
   lineItems: LineItem[]
   status: 'processing' | 'review' | 'approved'
+  saving: boolean
+  saveError: string | null
 }
 
 const CATEGORIES = ['Groceries', 'Fuel', 'Pharmacy', 'Utilities', 'Dining', 'Other']
 
 /** Mock extraction — no real OCR is wired yet (confirmed scope: UI scaffold
  * first, real computer-vision/price-matching pipeline is a scoped follow-up). */
-function mockExtract(fileName: string): Omit<ScannedInvoice, 'id' | 'fileName' | 'status'> {
+function mockExtract(
+  fileName: string,
+): Omit<ScannedInvoice, 'id' | 'fileName' | 'status' | 'clientRef' | 'file' | 'saving' | 'saveError'> {
   const samples = [
     {
       vendor: 'Carrefour Market',
@@ -77,6 +86,7 @@ function hashCode(s: string) {
 
 export function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const showToast = useToast()
   const [invoices, setInvoices] = useState<ScannedInvoice[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [showCamera, setShowCamera] = useState(false)
@@ -85,6 +95,8 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
     const id = crypto.randomUUID()
     const entry: ScannedInvoice = {
       id,
+      clientRef: crypto.randomUUID(),
+      file,
       fileName: file.name,
       status: 'processing',
       vendor: '',
@@ -94,6 +106,8 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
       currency: 'EGP',
       confidence: 0,
       lineItems: [],
+      saving: false,
+      saveError: null,
     }
     setInvoices((prev) => [entry, ...prev])
 
@@ -116,10 +130,67 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
     setInvoices((prev) => prev.map((inv) => (inv.id === reviewingId ? { ...inv, ...patch } : inv)))
   }
 
-  function hangUp() {
-    if (!reviewingId) return
-    setInvoices((prev) => prev.map((inv) => (inv.id === reviewingId ? { ...inv, status: 'approved' } : inv)))
-    setReviewingId(null)
+  async function hangUp() {
+    const invoice = invoices.find((inv) => inv.id === reviewingId)
+    if (!invoice) return
+
+    setInvoices((prev) => prev.map((inv) => (inv.id === invoice.id ? { ...inv, saving: true, saveError: null } : inv)))
+
+    // client_ref was minted once, when this scan entered review — reusing it
+    // here (including on a retry after failure) is what makes the save
+    // idempotent: save_receipt returns the existing expense instead of
+    // writing a duplicate if this exact client_ref already succeeded.
+    const extracted: ExtractedReceipt = {
+      client_ref: invoice.clientRef,
+      merchant: invoice.vendor ? { name: invoice.vendor } : null,
+      document_type: 'receipt',
+      image_url: null,
+      invoice_number: null,
+      issued_at: invoice.date || null,
+      due_at: null,
+      subtotal: null,
+      tax: null,
+      total: invoice.amount,
+      currency: invoice.currency,
+      extraction_confidence: invoice.confidence,
+      extraction_source: 'mock',
+      raw_extraction: null,
+      // Categorisation against the user's real expense_categories is Packet
+      // 6's job (real AI classification) — the mock's free-text category
+      // stays display-only for now rather than being matched or invented.
+      category_id: null,
+      note: null,
+      spent_at: invoice.date || new Date().toISOString().slice(0, 10),
+      items: invoice.lineItems.map((item, i) => ({
+        label: item.label,
+        quantity: null,
+        unit_price: item.amount,
+        line_total: item.amount,
+        discount: null,
+        category_id: null,
+        position: i,
+      })),
+    }
+
+    try {
+      await saveReceipt(extracted, invoice.file)
+      setInvoices((prev) =>
+        prev.map((inv) => (inv.id === invoice.id ? { ...inv, status: 'approved', saving: false } : inv)),
+      )
+      setReviewingId(null)
+      showToast('Expense saved', 'success')
+    } catch (err) {
+      // Never close the modal on a failed save — that would silently lose
+      // the user's corrections. The same client_ref is still on the
+      // invoice, so hitting "Hang it up" again safely retries.
+      setInvoices((prev) =>
+        prev.map((inv) =>
+          inv.id === invoice.id
+            ? { ...inv, saving: false, saveError: err instanceof Error ? err.message : 'Failed to save expense' }
+            : inv,
+        ),
+      )
+    }
   }
 
   function discard(id: string) {
@@ -427,7 +498,7 @@ function ReviewPanel({
   invoice: ScannedInvoice | null
   onClose: () => void
   onChange: (patch: Partial<ScannedInvoice>) => void
-  onHangUp: () => void
+  onHangUp: () => void | Promise<void>
   onDiscard: () => void
 }) {
   return (
@@ -531,18 +602,27 @@ function ReviewPanel({
                   />
                 </label>
 
+                {invoice.saveError && (
+                  <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                    {invoice.saveError} — your edits are still here, try again.
+                  </p>
+                )}
+
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
                     onClick={onHangUp}
-                    className="tap-target flex-1 rounded-lg bg-mood-accent py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    disabled={invoice.saving}
+                    className="tap-target flex flex-1 items-center justify-center gap-2 rounded-lg bg-mood-accent py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
-                    Hang it up
+                    {invoice.saving && <RefreshCw className="h-4 w-4 animate-spin" />}
+                    {invoice.saving ? 'Saving…' : invoice.saveError ? 'Retry' : 'Hang it up'}
                   </button>
                   <button
                     type="button"
                     onClick={onDiscard}
-                    className="tap-target rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+                    disabled={invoice.saving}
+                    className="tap-target rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5 disabled:opacity-50"
                   >
                     Discard
                   </button>
