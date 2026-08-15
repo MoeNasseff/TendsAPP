@@ -1,13 +1,15 @@
 import { Suspense } from 'react'
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
+import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { MoodLayout } from './components/MoodLayout'
 import { RequireAuth } from './components/RequireAuth'
+import { RootGate } from './components/RootGate'
 import { SeedGate } from './components/SeedGate'
 import { PageSkeleton } from './components/PageSkeleton'
 import { Login } from './pages/Login'
 
 export const router = createBrowserRouter([
+  { path: '/', element: <RootGate /> },
   { path: '/login', element: <Login /> },
   {
     path: '/',
@@ -25,7 +27,6 @@ export const router = createBrowserRouter([
           </SeedGate>
         ),
         children: [
-          { index: true, element: <Navigate to="/expenses" replace /> },
           {
             path: 'expenses',
             element: <MoodLayout mood="expenses" />,
@@ -90,6 +91,13 @@ export const router = createBrowserRouter([
                 },
               },
             ],
+          },
+          {
+            path: 'settings',
+            lazy: async () => {
+              const { SettingsPage } = await import('./modules/settings/SettingsPage')
+              return { Component: SettingsPage }
+            },
           },
         ],
       },

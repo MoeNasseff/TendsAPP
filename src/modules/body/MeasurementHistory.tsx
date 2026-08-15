@@ -4,20 +4,9 @@ import { TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import { EmptyState } from '../../components/EmptyState'
 import { LineChart as LineChartIcon } from 'lucide-react'
 import { formatDate, lengthUnit, toDisplayLength, type UnitSystemName } from '../../lib/format'
+import { CHART_SERIES, tooltipProps, axisProps, gridProps } from '../../lib/chartTheme'
 import type { BodyMeasurement, MeasurementSite, Sex } from '../../lib/types'
 import { sitesFor } from './measurementSites'
-
-/** Distinct enough to tell apart when several lines overlap. */
-const SERIES_COLORS = [
-  '#10b981',
-  '#f59e0b',
-  '#38bdf8',
-  '#f472b6',
-  '#a78bfa',
-  '#facc15',
-  '#fb7185',
-  '#34d399',
-]
 
 interface Props {
   history: BodyMeasurement[]
@@ -103,32 +92,24 @@ export function MeasurementHistory({ history, sex, unit }: Props) {
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgb(255 255 255 / 0.06)" />
-            <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} />
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="date" {...axisProps} />
             <YAxis
-              tick={{ fontSize: 11, fill: '#64748b' }}
+              {...axisProps}
               domain={['dataMin - 3', 'dataMax + 3']}
               unit={` ${lengthUnit(unit)}`}
               width={64}
             />
-            <Tooltip
-              contentStyle={{
-                background: '#0f172a',
-                border: '1px solid rgb(255 255 255 / 0.1)',
-                borderRadius: 12,
-                fontSize: 12,
-              }}
-              formatter={(value) => `${value} ${lengthUnit(unit)}`}
-            />
+            <Tooltip {...tooltipProps} formatter={(value) => `${value} ${lengthUnit(unit)}`} />
             {selected.map((site, i) => (
               <Line
                 key={site}
                 type="monotone"
                 dataKey={site}
                 name={available.find((s) => s.key === site)?.label ?? site}
-                stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                stroke={CHART_SERIES[i % CHART_SERIES.length]}
                 strokeWidth={2}
-                dot={{ r: 3 }}
+                dot={false}
                 // Gaps rather than false straight lines where a site was
                 // skipped in a session.
                 connectNulls

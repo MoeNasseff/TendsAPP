@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import { useBrand } from '../hooks/useBrand'
-import { GlassCard } from '../components/GlassCard'
+import { Card } from '../components/Card'
 
 type Mode = 'password' | 'magic-link'
 
@@ -83,12 +83,13 @@ export function Login() {
   return (
     <main className="flex min-h-svh items-center justify-center bg-brand-secondary px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center gap-2 text-center">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <img src={brand.logo.src} alt={brand.logo.alt} className="h-10 w-auto" />
-          <p className="text-sm text-slate-400">{brand.tagline}</p>
+          <h1 className="font-display text-display-sm text-white">{brand.appName}</h1>
+          <p className="text-sm text-white/50">{brand.tagline}</p>
         </div>
 
-        <GlassCard>
+        <Card>
           <div className="mb-4 flex rounded-xl border border-white/5 bg-black/20 p-1 text-sm">
             <button
               type="button"
@@ -111,23 +112,31 @@ export function Login() {
           </div>
 
           {mode === 'password' ? (
-            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
-              <input
-                type="email"
-                required
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-              />
-              <input
-                type="password"
-                required
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-              />
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+              <label htmlFor="login-email" className="flex flex-col gap-1">
+                <span className="text-micro uppercase text-white/50">Email</span>
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                />
+              </label>
+              <label htmlFor="login-password" className="flex flex-col gap-1">
+                <span className="text-micro uppercase text-white/50">Password</span>
+                <input
+                  id="login-password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                />
+              </label>
               <button
                 type="submit"
                 disabled={submitting}
@@ -148,15 +157,19 @@ export function Login() {
               Check <span className="text-brand-primary">{email}</span> for your sign-in link.
             </p>
           ) : (
-            <form onSubmit={handleMagicLinkSubmit} className="flex flex-col gap-3">
-              <input
-                type="email"
-                required
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-              />
+            <form onSubmit={handleMagicLinkSubmit} className="flex flex-col gap-4">
+              <label htmlFor="login-magic-email" className="flex flex-col gap-1">
+                <span className="text-micro uppercase text-white/50">Email</span>
+                <input
+                  id="login-magic-email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                />
+              </label>
               <button
                 type="submit"
                 disabled={submitting}
@@ -166,7 +179,7 @@ export function Login() {
               </button>
             </form>
           )}
-        </GlassCard>
+        </Card>
       </div>
     </main>
   )

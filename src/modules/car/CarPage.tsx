@@ -1,16 +1,33 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Gauge, Wrench, Car as CarIcon, ListChecks, Trash2, Pencil } from 'lucide-react'
+import { Gauge, Wrench, Car as CarIcon, ListChecks, Plus } from 'lucide-react'
 import { StatCard } from '../../components/StatCard'
-import { GlassCard } from '../../components/GlassCard'
+import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { StatGrid } from '../../components/StatGrid'
+import { Section } from '../../components/Section'
+import { Modal } from '../../components/Modal'
+import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
-import { RoamingCar } from '../../components/sprite/RoamingCar'
 import { formatDate } from '../../lib/format'
 import { useCar } from './useCar'
 import { ServiceForm } from './ServiceForm'
 import { OdometerGauge } from './OdometerGauge'
 import type { CarService } from '../../lib/types'
+
+interface ServiceRow {
+  id: string
+  label: string
+  part: string
+  remaining: string
+}
+
+interface OdometerRow {
+  id: string
+  reading_km: number
+  logged_at: string
+}
 
 function remainingFraction(service: CarService, currentKm: number) {
   if (service.interval_km && service.last_service_km != null) {
@@ -41,6 +58,7 @@ export function CarPage() {
   const { car, services, logs, loading, addOdometerReading, addService, updateService, deleteService } = useCar()
   const [editing, setEditing] = useState<CarService | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CarService | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [odometerInput, setOdometerInput] = useState('')
   const [submittingOdometer, setSubmittingOdometer] = useState(false)
 
@@ -85,21 +103,77 @@ export function CarPage() {
     } else {
       await addService(input)
     }
+    setFormOpen(false)
   }
+
+  const serviceRows = useMemo<ServiceRow[]>(
+    () =>
+      car
+        ? otherServices.map((s) => ({
+            id: s.id,
+            label: s.label || s.part,
+            part: s.part,
+            remaining: remainingLabel(s, car.current_odometer_km),
+          }))
+        : [],
+    [otherServices, car],
+  )
+
+  const serviceColumns = useMemo<DataGridColumn<ServiceRow>[]>(
+    () => [
+      { data: 'label', title: 'Label' },
+      { data: 'part', title: 'Part', format: (v) => String(v).replace('_', ' ') },
+      { data: 'remaining', title: 'Status' },
+    ],
+    [],
+  )
+
+  const serviceById = useMemo(() => new Map(services.map((s) => [s.id, s])), [services])
+
+  const odometerRows = useMemo<OdometerRow[]>(
+    () => logs.map((l) => ({ id: l.id, reading_km: l.reading_km, logged_at: l.logged_at })),
+    [logs],
+  )
+
+  const odometerColumns = useMemo<DataGridColumn<OdometerRow>[]>(
+    () => [
+      { data: 'reading_km', title: 'Reading (km)', format: (v) => `${Number(v).toLocaleString()} km` },
+      { data: 'logged_at', title: 'Date', format: (v) => formatDate(v as string) },
+    ],
+    [],
+  )
 
   if (loading) return <PageSkeleton />
   if (!car) return <EmptyState icon={CarIcon} title="No car yet" description="Your car will appear here once seeded." />
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="flex flex-col gap-10">
+      <PageHeader
+        eyebrow="SERVICE RECORD"
+        title="Car"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null)
+              setFormOpen(true)
+            }}
+            aria-label="Add service"
+            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+      />
+
+      <StatGrid>
         <StatCard label="Km to oil change" value={oilKmRemaining !== null ? oilKmRemaining.toLocaleString() : 'N/A'} icon={Gauge} />
         <StatCard label="Next due part" value={nextDuePart ?? 'None'} icon={Wrench} />
         <StatCard label="Current odometer" value={`${car.current_odometer_km.toLocaleString()} km`} icon={CarIcon} />
         <StatCard label="Services logged" value={logs.length} icon={ListChecks} />
-      </div>
+      </StatGrid>
 
-      <GlassCard className="flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
+      <Card className="flex flex-col items-center gap-4 sm:flex-row sm:justify-around">
         {oilService && oilService.interval_km ? (
           <OdometerGauge label="Oil change" kmRemaining={oilKmRemaining ?? 0} intervalKm={oilService.interval_km} />
         ) : (
@@ -127,59 +201,59 @@ export function CarPage() {
             Log
           </button>
         </form>
-      </GlassCard>
+      </Card>
 
-      <GlassCard>
-        <h3 className="mb-3 text-sm font-medium text-slate-300">Other services</h3>
-        {otherServices.length === 0 ? (
-          <EmptyState icon={Wrench} title="No other services yet" />
-        ) : (
-          <div className="flex flex-col divide-y divide-white/5">
-            {otherServices.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-100">{s.label || s.part}</p>
-                  <p className="text-xs text-slate-500">{remainingLabel(s, car.current_odometer_km)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditing(s)}
-                  aria-label={`Edit ${s.label || s.part}`}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(s)}
-                  aria-label={`Delete ${s.label || s.part}`}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
+      <Section title="Other services">
+        <Card>
+          {serviceRows.length === 0 ? (
+            <EmptyState icon={Wrench} title="No other services yet" />
+          ) : (
+            <DataGrid
+              columns={serviceColumns}
+              data={serviceRows}
+              onEdit={(row) => {
+                const service = serviceById.get(row.id)
+                if (service) {
+                  setEditing(service)
+                  setFormOpen(true)
+                }
+              }}
+              onDelete={(row) => {
+                const service = serviceById.get(row.id)
+                if (service) setDeleteTarget(service)
+              }}
+            />
+          )}
+        </Card>
+      </Section>
 
-      <ServiceForm editing={editing} onSubmit={handleServiceSubmit} onCancel={() => setEditing(null)} />
+      <Modal
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? 'Edit service' : 'Add service'}
+      >
+        <ServiceForm
+          editing={editing}
+          onSubmit={handleServiceSubmit}
+          onCancel={() => {
+            setFormOpen(false)
+            setEditing(null)
+          }}
+        />
+      </Modal>
 
-      <GlassCard>
-        <h3 className="mb-3 text-sm font-medium text-slate-300">Recent odometer logs</h3>
-        {logs.length === 0 ? (
-          <EmptyState icon={ListChecks} title="No logs yet" />
-        ) : (
-          <div className="flex flex-col divide-y divide-white/5 text-sm">
-            {logs.map((l) => (
-              <div key={l.id} className="flex items-center justify-between py-2">
-                <span className="text-slate-300">{l.reading_km.toLocaleString()} km</span>
-                <span className="text-xs text-slate-500">{formatDate(l.logged_at)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </GlassCard>
+      <Section title="Recent odometer logs">
+        <Card>
+          {odometerRows.length === 0 ? (
+            <EmptyState icon={ListChecks} title="No logs yet" />
+          ) : (
+            <DataGrid columns={odometerColumns} data={odometerRows} />
+          )}
+        </Card>
+      </Section>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -191,10 +265,6 @@ export function CarPage() {
           setDeleteTarget(null)
         }}
       />
-
-      {/* Drives across the page and blinks its headlights when parked, on a
-          fixed pointer-events-none layer. */}
-      <RoamingCar />
     </div>
   )
 }

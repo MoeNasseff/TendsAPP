@@ -2,6 +2,28 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Runs before any stylesheet paints, so the correct theme is set on
+      // first frame instead of flashing dark-then-light (or vice versa).
+      // Default is 'dark' (today's only look) rather than 'system', so
+      // nobody's view changes until they explicitly pick something in
+      // Settings. Keep this resolution logic in sync with src/lib/theme.ts.
+      (function () {
+        try {
+          var stored = localStorage.getItem('tend:theme')
+          var mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
+          var effective =
+            mode === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : mode
+          document.documentElement.setAttribute('data-theme', effective)
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark')
+        }
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tend</title>

@@ -46,7 +46,7 @@ export function ImageUpload({
             type="button"
             onClick={() => onChange(null)}
             aria-label="Remove image"
-            className="absolute -right-1.5 -top-1.5 rounded-full bg-black/70 p-0.5 text-white"
+            className="tap-target absolute -right-1.5 -top-1.5 rounded-full bg-black/70 p-0.5 text-white"
           >
             <X className="h-3 w-3" />
           </button>
@@ -57,7 +57,7 @@ export function ImageUpload({
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           aria-label="Upload image"
-          className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-white/15 text-slate-500 hover:border-mood-accent hover:text-mood-accent"
+          className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 text-slate-500 hover:border-mood-accent hover:text-mood-accent"
         >
           <ImagePlus className="h-5 w-5" />
         </button>

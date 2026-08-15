@@ -62,6 +62,44 @@
   --mood-border-rgb: 49 42 74;
 }
 
+/* Light-theme surface/border per mood. Accent hues above stay identical
+   across themes — only the near-black surface/border wash flips to a near-
+   white one, same reasoning as the shared ramp in index.css. */
+:root[data-theme='light'] {
+  --mood-surface-rgb: var(--brand-secondary-rgb);
+  --mood-border-rgb: 210 216 214;
+}
+
+:root[data-theme='light'][data-mood='expenses'],
+[data-theme='light'] [data-mood='expenses'] {
+  --mood-surface-rgb: 236 253 245;
+  --mood-border-rgb: 209 250 229;
+}
+
+:root[data-theme='light'][data-mood='dog'],
+[data-theme='light'] [data-mood='dog'] {
+  --mood-surface-rgb: 253 244 236;
+  --mood-border-rgb: 237 213 191;
+}
+
+:root[data-theme='light'][data-mood='car'],
+[data-theme='light'] [data-mood='car'] {
+  --mood-surface-rgb: 254 242 242;
+  --mood-border-rgb: 254 205 202;
+}
+
+:root[data-theme='light'][data-mood='meds'],
+[data-theme='light'] [data-mood='meds'] {
+  --mood-surface-rgb: 240 253 250;
+  --mood-border-rgb: 204 251 241;
+}
+
+:root[data-theme='light'][data-mood='body'],
+[data-theme='light'] [data-mood='body'] {
+  --mood-surface-rgb: 245 243 255;
+  --mood-border-rgb: 221 214 254;
+}
+
 /* Derived from whichever channel set won above — declared once, inherited by
    every element in that scope. */
 :root,
@@ -70,4 +108,9 @@
   --mood-accent-2: rgb(var(--mood-accent-2-rgb));
   --mood-surface: rgb(var(--mood-surface-rgb));
   --mood-border: rgb(var(--mood-border-rgb));
+  /* Lightened for text use. Several mood accents (car's red in particular)
+     fall under 4.5:1 against the surface ramp when used as small text —
+     fine for icon fills (3:1 non-text threshold) but not for labels. Mixing
+     toward white raises luminance without losing the hue. */
+  --mood-accent-text: color-mix(in srgb, var(--mood-accent) 65%, white 35%);
 }

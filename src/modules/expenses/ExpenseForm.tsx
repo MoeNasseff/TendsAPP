@@ -1,6 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Plus } from 'lucide-react'
-import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../hooks/useToast'
 import type { Expense, ExpenseCategory } from '../../lib/types'
 import type { ExpenseInput } from './useExpenses'
@@ -80,47 +79,58 @@ export function ExpenseForm({
   }
 
   return (
-    <GlassCard>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <input
-          type="number"
-          step="0.01"
-          required
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="date"
-          required
-          value={spentAt}
-          onChange={(e) => setSpentAt(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <div className="flex gap-2 sm:col-span-2">
-          <select
-            value={categoryId}
-            aria-label="Category"
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          >
-            <option value="">No category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setShowNewCategory((v) => !v)}
-            className="shrink-0 rounded-lg border border-white/10 px-3 text-slate-400 hover:border-mood-accent hover:text-mood-accent"
-            title="New category"
-            aria-label="New category"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label htmlFor="expense-amount" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Amount</span>
+          <input
+            id="expense-amount"
+            type="number"
+            step="0.01"
+            required
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="expense-spent-at" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Date</span>
+          <input
+            id="expense-spent-at"
+            type="date"
+            required
+            value={spentAt}
+            onChange={(e) => setSpentAt(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-micro uppercase text-white/50">Category</span>
+          <div className="flex gap-2">
+            <select
+              id="expense-category"
+              value={categoryId}
+              aria-label="Category"
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            >
+              <option value="">No category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowNewCategory((v) => !v)}
+              className="shrink-0 rounded-lg border border-white/10 px-3 text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+              title="New category"
+              aria-label="New category"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {showNewCategory && (
@@ -128,12 +138,14 @@ export function ExpenseForm({
             <input
               type="text"
               placeholder="Category name"
+              aria-label="New category name"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
             />
             <input
               type="color"
+              aria-label="New category color"
               value={newCategoryColor}
               onChange={(e) => setNewCategoryColor(e.target.value)}
               className="h-9 w-10 rounded-lg border border-white/10 bg-black/20"
@@ -148,13 +160,17 @@ export function ExpenseForm({
           </div>
         )}
 
-        <textarea
-          placeholder="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none sm:col-span-2"
-        />
+        <label htmlFor="expense-note" className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-micro uppercase text-white/50">Note</span>
+          <textarea
+            id="expense-note"
+            placeholder="Optional"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
 
         <div className="flex gap-2 sm:col-span-2">
           <button
@@ -175,6 +191,5 @@ export function ExpenseForm({
           )}
         </div>
       </form>
-    </GlassCard>
   )
 }

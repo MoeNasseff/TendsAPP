@@ -1,14 +1,25 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Pill, CheckCircle2, AlertTriangle, TrendingUp, Trash2, Pencil, Check, Undo2 } from 'lucide-react'
+import { Pill, CheckCircle2, AlertTriangle, TrendingUp, Check, Undo2, Plus } from 'lucide-react'
 import { StatCard } from '../../components/StatCard'
-import { GlassCard } from '../../components/GlassCard'
+import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { StatGrid } from '../../components/StatGrid'
+import { Section } from '../../components/Section'
+import { Modal } from '../../components/Modal'
+import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
-import { RoamingPills } from '../../components/sprite/RoamingPills'
 import { useMeds } from './useMeds'
 import { MedForm } from './MedForm'
 import type { Med } from '../../lib/types'
+
+interface MedRow {
+  id: string
+  name: string
+  dosage: string
+  times: string
+}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10)
@@ -18,6 +29,7 @@ export function MedsPage() {
   const { meds, todayLogs, last7DaysLogs, loading, addMed, updateMed, deleteMed, markTaken, undoTaken } = useMeds()
   const [editing, setEditing] = useState<Med | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Med | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   const todaySlots = useMemo(() => {
     const weekday = new Date().getDay()
@@ -71,21 +83,62 @@ export function MedsPage() {
     } else {
       await addMed(input)
     }
+    setFormOpen(false)
   }
+
+  const medRows = useMemo<MedRow[]>(
+    () =>
+      meds.map((m) => ({
+        id: m.id,
+        name: m.name,
+        dosage: m.dosage ?? '',
+        times: m.times_of_day.join(', ') || 'As needed',
+      })),
+    [meds],
+  )
+
+  const medColumns = useMemo<DataGridColumn<MedRow>[]>(
+    () => [
+      { data: 'name', title: 'Name' },
+      { data: 'dosage', title: 'Dosage', format: (v) => (v as string) || '—' },
+      { data: 'times', title: 'Times' },
+    ],
+    [],
+  )
+
+  const medById = useMemo(() => new Map(meds.map((m) => [m.id, m])), [meds])
 
   if (loading) return <PageSkeleton />
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="flex flex-col gap-10">
+      <PageHeader
+        eyebrow="SCHEDULE"
+        title="Meds"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null)
+              setFormOpen(true)
+            }}
+            aria-label="Add med"
+            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+      />
+
+      <StatGrid>
         <StatCard label="Doses today" value={stats.total} icon={Pill} />
         <StatCard label="Taken" value={stats.taken} icon={CheckCircle2} />
         <StatCard label="Missed" value={stats.missed} icon={AlertTriangle} />
         <StatCard label="Adherence (7d)" value={`${stats.adherence}%`} icon={TrendingUp} />
-      </div>
+      </StatGrid>
 
-      <GlassCard>
-        <h3 className="mb-3 text-sm font-medium text-slate-300">Today's checklist</h3>
+      <Section title="Today's checklist">
+        <Card>
         {todaySlots.length === 0 ? (
           <EmptyState icon={Pill} title="No meds scheduled for today" />
         ) : (
@@ -127,46 +180,50 @@ export function MedsPage() {
             })}
           </div>
         )}
-      </GlassCard>
+        </Card>
+      </Section>
 
-      <MedForm editing={editing} onSubmit={handleSubmit} onCancel={() => setEditing(null)} />
+      <Modal
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? 'Edit med' : 'Add med'}
+      >
+        <MedForm
+          editing={editing}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setFormOpen(false)
+            setEditing(null)
+          }}
+        />
+      </Modal>
 
-      <GlassCard>
-        <h3 className="mb-3 text-sm font-medium text-slate-300">All meds</h3>
-        {meds.length === 0 ? (
+      <Section title="All meds">
+        <Card>
+        {medRows.length === 0 ? (
           <EmptyState icon={Pill} title="No meds added yet" />
         ) : (
-          <div className="flex flex-col divide-y divide-white/5">
-            {meds.map((m) => (
-              <div key={m.id} className="flex items-center gap-3 py-3">
-                {m.image_url && <img src={m.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-slate-100">{m.name}</p>
-                  <p className="truncate text-xs text-slate-500">
-                    {m.dosage} · {m.times_of_day.join(', ') || 'As needed'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditing(m)}
-                  aria-label={`Edit ${m.name}`}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(m)}
-                  aria-label={`Delete ${m.name}`}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <DataGrid
+            columns={medColumns}
+            data={medRows}
+            onEdit={(row) => {
+              const med = medById.get(row.id)
+              if (med) {
+                setEditing(med)
+                setFormOpen(true)
+              }
+            }}
+            onDelete={(row) => {
+              const med = medById.get(row.id)
+              if (med) setDeleteTarget(med)
+            }}
+          />
         )}
-      </GlassCard>
+        </Card>
+      </Section>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -178,10 +235,6 @@ export function MedsPage() {
           setDeleteTarget(null)
         }}
       />
-
-      {/* Spills at a random spot on the page, then fades and reappears
-          elsewhere. Fixed layer, so it adds no height and blocks nothing. */}
-      <RoamingPills />
     </div>
   )
 }

@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import type { ReminderChannel, ReminderSourceModule } from '../lib/types'
 import { MOOD_BY_MODULE } from '../lib/moods'
+import { DUR, EASE } from '../lib/motion'
 import { Portal } from './Portal'
 
 const CHANNELS: ReminderChannel[] = ['telegram', 'push', 'email', 'whatsapp']
@@ -30,8 +32,7 @@ export function ReminderPicker({
   const [fireAt, setFireAt] = useState('')
   const [channels, setChannels] = useState<ReminderChannel[]>(['push'])
   const [submitting, setSubmitting] = useState(false)
-
-  if (!open) return null
+  const reduce = useReducedMotion()
 
   function toggleChannel(c: ReminderChannel) {
     setChannels((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
@@ -67,16 +68,29 @@ export function ReminderPicker({
   }
 
   return (
-    <Portal>
-      {/* Portal renders into document.body, which is outside the MoodLayout
-          wrapper the calling page sits in — so the module accent has to be
-          re-established here from sourceModule. */}
-      <div
-        data-mood={MOOD_BY_MODULE[sourceModule]}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      >
-        <div className="glass w-full max-w-sm rounded-2xl border p-6" onClick={(e) => e.stopPropagation()}>
+    <AnimatePresence>
+      {open && (
+        <Portal>
+          {/* Portal renders into document.body, which is outside the MoodLayout
+              wrapper the calling page sits in — so the module accent has to be
+              re-established here from sourceModule. */}
+          <motion.div
+            data-mood={MOOD_BY_MODULE[sourceModule]}
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduce ? undefined : { opacity: 0 }}
+            transition={{ duration: DUR.fast, ease: EASE }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          >
+            <motion.div
+              initial={reduce ? false : { opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
+              transition={{ duration: DUR.base, ease: EASE }}
+              className="glass w-full max-w-sm rounded-2xl border p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
           <h3 className="mb-4 text-base font-semibold text-slate-100">Set reminder — {defaultTitle}</h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <input
@@ -116,8 +130,10 @@ export function ReminderPicker({
               </button>
             </div>
           </form>
-        </div>
-      </div>
-    </Portal>
+            </motion.div>
+          </motion.div>
+        </Portal>
+      )}
+    </AnimatePresence>
   )
 }

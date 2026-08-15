@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Send, CheckCircle2, Bell } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import { getTelegramConnectUrl } from '../lib/notify'
 import { isPushSubscribed, subscribeToPush } from '../lib/pwa'
+import { DUR, EASE } from '../lib/motion'
 import { Portal } from './Portal'
 
 export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -25,9 +27,8 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
     isPushSubscribed().then(setPushEnabled)
   }, [open, user])
 
-  if (!open || !user) return null
-
-  const connectUrl = getTelegramConnectUrl(user.id)
+  const reduce = useReducedMotion()
+  const connectUrl = user ? getTelegramConnectUrl(user.id) : null
 
   async function handleEnablePush() {
     setSubscribing(true)
@@ -43,9 +44,25 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
   }
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-        <div className="glass w-full max-w-sm rounded-2xl border p-6" onClick={(e) => e.stopPropagation()}>
+    <AnimatePresence>
+      {open && user && (
+        <Portal>
+          <motion.div
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduce ? undefined : { opacity: 0 }}
+            transition={{ duration: DUR.fast, ease: EASE }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          >
+            <motion.div
+              initial={reduce ? false : { opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
+              transition={{ duration: DUR.base, ease: EASE }}
+              className="glass w-full max-w-sm rounded-2xl border p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
           <h3 className="mb-4 text-base font-semibold text-slate-100">Notifications</h3>
 
           <div className="flex flex-col gap-3">
@@ -107,8 +124,10 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
           >
             Close
           </button>
-        </div>
-      </div>
-    </Portal>
+            </motion.div>
+          </motion.div>
+        </Portal>
+      )}
+    </AnimatePresence>
   )
 }

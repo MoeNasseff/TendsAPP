@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { GlassCard } from '../../components/GlassCard'
 import { ImageUpload } from '../../components/ImageUpload'
 import { useToast } from '../../hooks/useToast'
 import type { DogItem, DogItemKind, ScheduleType } from '../../lib/types'
@@ -87,66 +86,90 @@ export function DogItemForm({
   }
 
   return (
-    <GlassCard>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <ImageUpload folder="dog" value={imageUrl} onChange={setImageUrl} />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <select
-            value={kind}
-            aria-label="Kind"
-            onChange={(e) => setKind(e.target.value as DogItemKind)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          >
-            <option value="vaccine">Vaccine</option>
-            <option value="medicine">Medicine</option>
-          </select>
-          <input
-            type="text"
-            required
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          />
-        </div>
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="text"
-          placeholder="Dose"
-          value={dose}
-          onChange={(e) => setDose(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select
-            value={scheduleType}
-            aria-label="Schedule type"
-            onChange={(e) => setScheduleType(e.target.value as ScheduleType)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          >
-            <option value="once">Once</option>
-            <option value="recurring">Recurring</option>
-          </select>
-          <input
-            type="datetime-local"
-            value={dueAt}
-            onChange={(e) => setDueAt(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          />
-          {scheduleType === 'recurring' && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label htmlFor="dogitem-kind" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Kind</span>
+            <select
+              id="dogitem-kind"
+              value={kind}
+              onChange={(e) => setKind(e.target.value as DogItemKind)}
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            >
+              <option value="vaccine">Vaccine</option>
+              <option value="medicine">Medicine</option>
+            </select>
+          </label>
+          <label htmlFor="dogitem-name" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Name</span>
             <input
-              type="number"
-              placeholder="Repeat every N days"
-              value={repeatDays}
-              onChange={(e) => setRepeatDays(e.target.value)}
+              id="dogitem-name"
+              type="text"
+              required
+              placeholder="e.g. Rabies vaccine"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
             />
+          </label>
+        </div>
+        <label htmlFor="dogitem-description" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Description</span>
+          <textarea
+            id="dogitem-description"
+            placeholder="Optional"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="dogitem-dose" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Dose</span>
+          <input
+            id="dogitem-dose"
+            type="text"
+            placeholder="Optional"
+            value={dose}
+            onChange={(e) => setDose(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <label htmlFor="dogitem-schedule-type" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Schedule type</span>
+            <select
+              id="dogitem-schedule-type"
+              value={scheduleType}
+              onChange={(e) => setScheduleType(e.target.value as ScheduleType)}
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            >
+              <option value="once">Once</option>
+              <option value="recurring">Recurring</option>
+            </select>
+          </label>
+          <label htmlFor="dogitem-due-at" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Due</span>
+            <input
+              id="dogitem-due-at"
+              type="datetime-local"
+              value={dueAt}
+              onChange={(e) => setDueAt(e.target.value)}
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            />
+          </label>
+          {scheduleType === 'recurring' && (
+            <label htmlFor="dogitem-repeat-days" className="flex flex-col gap-1">
+              <span className="text-micro uppercase text-white/50">Repeat every (days)</span>
+              <input
+                id="dogitem-repeat-days"
+                type="number"
+                value={repeatDays}
+                onChange={(e) => setRepeatDays(e.target.value)}
+                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              />
+            </label>
           )}
         </div>
         <div className="flex gap-2">
@@ -168,6 +191,5 @@ export function DogItemForm({
           )}
         </div>
       </form>
-    </GlassCard>
   )
 }

@@ -1,0 +1,21 @@
+import type { ReactNode } from 'react'
+
+export function Section({
+  title,
+  children,
+  action,
+}: {
+  title: string
+  children: ReactNode
+  action?: ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-display-sm text-white">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}

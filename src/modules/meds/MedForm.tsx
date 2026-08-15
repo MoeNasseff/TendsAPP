@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { X } from 'lucide-react'
-import { GlassCard } from '../../components/GlassCard'
 import { ImageUpload } from '../../components/ImageUpload'
 import { useToast } from '../../hooks/useToast'
 import type { Med } from '../../lib/types'
@@ -93,36 +92,47 @@ export function MedForm({
   }
 
   return (
-    <GlassCard>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <ImageUpload folder="meds" value={imageUrl} onChange={setImageUrl} />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <input
-            type="text"
-            required
-            placeholder="Med name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          />
-          <input
-            type="text"
-            placeholder="Dosage (e.g. 500mg)"
-            value={dosage}
-            onChange={(e) => setDosage(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label htmlFor="med-name" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Med name</span>
+            <input
+              id="med-name"
+              type="text"
+              required
+              placeholder="e.g. Ibuprofen"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            />
+          </label>
+          <label htmlFor="med-dosage" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Dosage</span>
+            <input
+              id="med-dosage"
+              type="text"
+              placeholder="e.g. 500mg"
+              value={dosage}
+              onChange={(e) => setDosage(e.target.value)}
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            />
+          </label>
         </div>
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
+        <label htmlFor="med-description" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Description</span>
+          <textarea
+            id="med-description"
+            placeholder="Optional"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
 
         <div>
-          <p className="mb-1.5 text-xs text-slate-500">Times of day</p>
+          <p className="mb-1.5 text-micro uppercase text-white/50">Times of day</p>
           <div className="flex flex-wrap gap-2">
             {times.map((t, i) => (
               <div key={i} className="flex items-center gap-1">
@@ -137,7 +147,7 @@ export function MedForm({
                     type="button"
                     onClick={() => removeTimeSlot(i)}
                     aria-label={`Remove time slot ${t}`}
-                    className="text-slate-500 hover:text-red-400"
+                    className="tap-target text-slate-500 hover:text-red-400"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -147,7 +157,7 @@ export function MedForm({
             <button
               type="button"
               onClick={addTimeSlot}
-              className="rounded-lg border border-dashed border-white/15 px-3 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+              className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
             >
               + Time
             </button>
@@ -155,14 +165,14 @@ export function MedForm({
         </div>
 
         <div>
-          <p className="mb-1.5 text-xs text-slate-500">Days of week</p>
+          <p className="mb-1.5 text-micro uppercase text-white/50">Days of week</p>
           <div className="flex gap-1.5">
             {WEEKDAYS.map((label, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => toggleDay(i)}
-                className={`h-8 w-8 rounded-lg text-xs font-medium transition-colors ${
+                className={`tap-target h-8 w-8 rounded-lg text-xs font-medium transition-colors ${
                   daysOfWeek.includes(i) ? 'bg-mood-accent text-white' : 'bg-black/20 text-slate-500'
                 }`}
               >
@@ -191,6 +201,5 @@ export function MedForm({
           )}
         </div>
       </form>
-    </GlassCard>
   )
 }

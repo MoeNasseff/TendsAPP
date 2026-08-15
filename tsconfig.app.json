@@ -24,5 +24,10 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "brand.config.json"],
-  "exclude": ["src/sw.ts"]
+  "exclude": [
+    "src/sw.ts",
+    "src/components/sprite",
+    "src/hooks/useSpriteAnimation.ts",
+    "src/lib/sprite"
+  ]
 }

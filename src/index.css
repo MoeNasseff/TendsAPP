@@ -3,7 +3,14 @@
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
 @import '@fontsource/inter/700.css';
+/* Display face. Latin subsets only — the full @fontsource/libre-caslon-text
+   entrypoint pulls latin-ext too, which nothing here needs and which costs
+   real bytes on a PWA. */
+@import '@fontsource/libre-caslon-text/latin-400.css';
+@import '@fontsource/libre-caslon-text/latin-700.css';
 @import './styles/moods.css';
+@import 'datatables.net-dt/css/dataTables.dataTables.css';
+@import 'datatables.net-buttons-dt/css/buttons.dataTables.css';
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +22,7 @@
    brand.config.json, which feeds the manifest and theme-color. */
 :root {
   --brand-primary-rgb: 39 130 118;
-  --brand-secondary-rgb: 18 48 58;
+  --brand-secondary-rgb: 17 20 21;
   --brand-accent-rgb: 224 168 58;
   --brand-on-primary-rgb: 255 255 255;
 
@@ -23,16 +30,52 @@
   --brand-secondary: rgb(var(--brand-secondary-rgb));
   --brand-accent: rgb(var(--brand-accent-rgb));
   --brand-on-primary: rgb(var(--brand-on-primary-rgb));
+
+  /* Surface ramp. The app previously had exactly one card surface, so nothing
+     could sit visually above or below anything else. These four steps are the
+     elevation model: depth comes from the ramp plus a hairline stroke, never
+     from a shadow. Same channel form as above so `bg-surface-low/60` works. */
+  --surface-lowest-rgb: 12 15 16;
+  --surface-rgb: 17 20 21;
+  --surface-low-rgb: 25 28 29;
+  --surface-bright-rgb: 55 58 59;
+
+  /* Motion. Fades and slow scale-ups only — no spring overshoot. */
+  --dur-fast: 200ms;
+  --dur-base: 300ms;
+  --dur-slow: 400ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-* {
-  font-family: 'Inter', system-ui, sans-serif;
+/* Light theme: overrides only the tokens that actually change. Accent hues
+   (brand-primary, brand-accent, every mood accent in moods.css) stay
+   identical across themes — only grounds/surfaces flip, mirroring the dark
+   ramp's ordering (lowest darkest, bright lightest) instead of inverting it,
+   so elevation still reads the same way. `data-theme` is set on <html> by
+   the inline bootstrap script in index.html and src/lib/theme.ts. */
+:root[data-theme='light'] {
+  --brand-secondary-rgb: 240 242 241;
+
+  --surface-lowest-rgb: 227 230 229;
+  --surface-rgb: 240 242 241;
+  --surface-low-rgb: 250 251 250;
+  --surface-bright-rgb: 255 255 255;
 }
 
+/* Body, not `*`. A universal font-family selector wins against every utility
+   class, which would silently defeat `font-display` everywhere it is applied.
+   Setting it here lets the cascade work normally. */
 body {
   margin: 0;
   background: var(--brand-secondary);
   color-scheme: dark;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='light'] body {
+  color-scheme: light;
 }
 
 #root {
@@ -53,19 +96,72 @@ body {
   background: color-mix(in srgb, var(--brand-primary) 55%, transparent);
 }
 
+/* Translucent chrome: app bars, nav, toasts, dialogs. Keeps `backdrop-filter`,
+   which is why Portal exists — see the note in Portal.tsx before removing it
+   from anything that hosts a fixed-position child. */
 .glass {
-  background: rgba(17, 29, 46, 0.75);
-  backdrop-filter: blur(16px);
-  border-color: color-mix(in srgb, var(--brand-primary) 15%, transparent);
+  background: rgb(var(--surface-rgb) / 0.8);
+  backdrop-filter: blur(24px);
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+:root[data-theme='light'] .glass {
+  border-color: rgb(0 0 0 / 0.08);
+}
+
+/* Content surfaces: solid, one step up from the page, hairline stroke, no
+   blur and no shadow. Depth reads from the ramp, not from a drop shadow. */
+.surface-card {
+  background: rgb(var(--surface-low-rgb));
+  border-color: rgb(255 255 255 / 0.06);
+}
+
+:root[data-theme='light'] .surface-card {
+  border-color: rgb(0 0 0 / 0.08);
 }
 
 .form-input {
-  transition: all 0.2s ease;
+  transition: all var(--dur-fast) var(--ease-out);
 }
 
 .form-input:focus {
   border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+
+/* Focus states, everything that isn't a text input (.form-input:focus above
+   already themes those). Previously nothing here — buttons and links fell
+   back to the browser's unstyled default outline, invisible or generic
+   depending on the browser. This covers native <button>/<a> plus anything
+   rendered by DataTables, since it's a plain type selector. */
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgb(var(--surface-rgb)),
+    0 0 0 4px var(--mood-accent);
+}
+
+/* Expands the click/tap hit area to the 44px WCAG/Apple HIG floor without
+   growing the visible control. The ::before is part of the host element's
+   hit-test area, so a click anywhere inside it fires the host's own
+   onClick — no separate event wiring needed. Used on icon-only buttons that
+   would otherwise sit well under 44px. */
+.tap-target {
+  position: relative;
+}
+.tap-target::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* Text-safe accent — see the --mood-accent-text comment in moods.css. Use
+   for small/persistent accent-colored text (eyebrows, active nav labels);
+   keep plain text-mood-accent for icon fills and hover-only states. */
+.text-mood-accent-safe {
+  color: var(--mood-accent-text);
 }
 
 @keyframes toast-in {
@@ -78,7 +174,7 @@ body {
 }
 
 .animate-toast-in {
-  animation: toast-in 0.3s ease;
+  animation: toast-in var(--dur-base) var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -89,4 +185,122 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* DataTables theming. The shipped stylesheet exposes most of its palette as
+   --dt-* custom properties (see :root / :root.dark in
+   datatables.net-dt/css/dataTables.dataTables.css) — redefining them here
+   re-themes the whole widget without fighting individual selectors. Scoped to
+   .dt-theme rather than adding a global `.dark` class to <html>, since this
+   app has no other use for one and DataTables' dark palette doesn't exactly
+   match the surface ramp anyway. buttons.dataTables.css is not var-based, so
+   .dt-button gets direct overrides below. */
+.dt-theme {
+  --dt-html_background: transparent;
+  --dt-row_background: transparent;
+  --dt-row_background-hover: 255 255 255;
+  --dt-row_alpha-hover: 0.03;
+  --dt-row_background-stripe: 255 255 255;
+  --dt-row_alpha-stripe: 0.015;
+  --dt-header_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-header_padding: 10px 12px;
+  --dt-footer_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-footer_padding: 10px 12px;
+  --dt-body_border: 1px solid rgb(255 255 255 / 0.05);
+  --dt-body_padding: 10px 12px;
+  --dt-control_color: rgb(255 255 255 / 0.75);
+  --dt-order-arrow_color: rgb(255 255 255 / 0.3);
+  --dt-order-arrow_color-current: var(--mood-accent);
+  --dt-paging-button_padding: 0.4em 0.85em;
+  --dt-paging-button_border-radius: 0.5rem;
+  --dt-paging-button_margin-left: 0.35em;
+  --dt-paging-button_box-shadow: none;
+  --dt-paging-button_box-shadow-active: none;
+  --dt-paging-button_background: transparent;
+  --dt-paging-button_border: 1px solid transparent;
+  --dt-paging-button_color: rgb(255 255 255 / 0.5);
+  --dt-paging-button_background-hover: rgb(255 255 255 / 0.06);
+  --dt-paging-button_border-hover: 1px solid transparent;
+  --dt-paging-button_color-hover: rgb(255 255 255 / 0.85);
+  --dt-paging-button_background-current: var(--mood-accent);
+  --dt-paging-button_border-current: 1px solid transparent;
+  --dt-paging-button_color-current: white;
+  --dt-paging-button_background-current-hover: var(--mood-accent);
+  --dt-paging-button_border-current-hover: 1px solid transparent;
+  --dt-paging-button_color-current-hover: white;
+  --dt-paging-button_background-disabled: transparent;
+  --dt-paging-button_border-disabled: 1px solid transparent;
+  --dt-paging-button_color-disabled: rgb(255 255 255 / 0.2);
+  --dt-input_border: 1px solid rgb(255 255 255 / 0.1);
+  --dt-input_border-radius: 0.5rem;
+  --dt-input_padding: 0.4em 0.75em;
+  --dt-input_background: rgb(0 0 0 / 0.2);
+  --dt-input_color: rgb(255 255 255 / 0.85);
+}
+
+.dt-theme table.dataTable {
+  width: 100% !important;
+  color: rgb(255 255 255 / 0.75);
+  font-size: 0.8125rem;
+}
+
+.dt-theme table.dataTable thead th {
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgb(255 255 255 / 0.5);
+}
+
+.dt-theme table.dataTable td.dt-actions {
+  text-align: right;
+}
+
+/* Paging buttons and the search input default to well under 44px tall
+   (--dt-paging-button_padding above is em-relative to a 13px font, so it
+   doesn't reliably clear the floor). Fixed min-height is more reliable than
+   chasing the right em value. */
+.dt-theme div.dt-paging .dt-paging-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dt-theme div.dt-search input,
+.dt-theme div.dt-input {
+  outline: none;
+  min-height: 44px;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.dt-theme div.dt-search input:focus,
+.dt-theme div.dt-input:focus {
+  border-color: var(--mood-accent);
+}
+
+.dt-theme div.dt-info {
+  color: rgb(255 255 255 / 0.5);
+  font-size: 0.75rem;
+}
+
+.dt-theme .dt-button {
+  background: rgb(var(--surface-bright-rgb));
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.5rem;
+  color: rgb(255 255 255 / 0.75);
+  padding: 0.4em 0.9em;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  box-shadow: none !important;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.dt-theme .dt-button:hover:not(.disabled) {
+  background: rgb(var(--surface-bright-rgb));
+  border-color: var(--mood-accent);
+  color: var(--mood-accent);
 }

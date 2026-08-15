@@ -1,18 +1,31 @@
 import { useMemo, useState } from 'react'
-import { Wallet, TrendingUp, Calendar, Receipt, Trash2, Pencil, Download } from 'lucide-react'
+import { Wallet, TrendingUp, Calendar, Receipt, Plus, ScanLine } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { StatCard } from '../../components/StatCard'
-import { GlassCard } from '../../components/GlassCard'
+import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { StatGrid } from '../../components/StatGrid'
+import { Section } from '../../components/Section'
+import { Modal } from '../../components/Modal'
+import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
-import { RoamingMoney } from '../../components/sprite/RoamingMoney'
 import { formatCurrency, formatDate } from '../../lib/format'
+import { CHART_SERIES, tooltipProps, axisProps } from '../../lib/chartTheme'
 import { useExpenses } from './useExpenses'
 import { ExpenseForm } from './ExpenseForm'
+import { ScanModal } from '../scanner/ScanModal'
 import type { Expense } from '../../lib/types'
 
-const FALLBACK_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
+interface ExpenseRow {
+  id: string
+  spent_at: string
+  categoryName: string
+  amount: number
+  currency: string
+  note: string
+}
 
 function isSameMonth(iso: string, ref: Date) {
   const d = new Date(iso)
@@ -23,6 +36,8 @@ export function ExpensesPage() {
   const { categories, expenses, loading, addExpense, updateExpense, deleteExpense, addCategory } = useExpenses()
   const [editing, setEditing] = useState<Expense | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
@@ -87,24 +102,35 @@ export function ExpensesPage() {
     })
   }, [expenses, filterCategory, filterFrom, filterTo])
 
-  function exportCsv() {
-    const header = ['Date', 'Category', 'Amount', 'Currency', 'Note']
-    const rows = filteredExpenses.map((e) => [
-      e.spent_at,
-      e.category_id ? (categoryById.get(e.category_id)?.name ?? '') : '',
-      e.amount,
-      e.currency,
-      (e.note ?? '').replace(/"/g, '""'),
-    ])
-    const csv = [header, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `expenses-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const tableRows = useMemo<ExpenseRow[]>(
+    () =>
+      filteredExpenses.map((e) => ({
+        id: e.id,
+        spent_at: e.spent_at,
+        categoryName: e.category_id ? (categoryById.get(e.category_id)?.name ?? 'Unknown') : 'Uncategorized',
+        amount: Number(e.amount),
+        currency: e.currency,
+        note: e.note ?? '',
+      })),
+    [filteredExpenses, categoryById],
+  )
+
+  const tableColumns = useMemo<DataGridColumn<ExpenseRow>[]>(
+    () => [
+      { data: 'spent_at', title: 'Date', format: (v) => formatDate(v as string) },
+      { data: 'categoryName', title: 'Category' },
+      {
+        data: 'amount',
+        title: 'Amount',
+        sensitive: true,
+        format: (v, row) => formatCurrency(v as number, row.currency),
+      },
+      { data: 'note', title: 'Note', format: (v) => (v as string) || '—' },
+    ],
+    [],
+  )
+
+  const expenseById = useMemo(() => new Map(expenses.map((e) => [e.id, e])), [expenses])
 
   async function handleSubmit(input: Parameters<typeof addExpense>[0]) {
     if (editing) {
@@ -113,60 +139,102 @@ export function ExpensesPage() {
     } else {
       await addExpense(input)
     }
+    setFormOpen(false)
   }
 
   if (loading) return <PageSkeleton />
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="This month" value={formatCurrency(stats.total)} icon={Wallet} />
-        <StatCard label="Top category" value={stats.topCategoryName} icon={TrendingUp} />
-        <StatCard label="Avg/day" value={formatCurrency(stats.avgPerDay)} icon={Calendar} />
-        <StatCard label="Transactions" value={stats.count} icon={Receipt} />
-      </div>
+    <div className="flex flex-col gap-10">
+      <PageHeader
+        eyebrow="MONTHLY OUTFLOW"
+        title="Expenses"
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setScanOpen(true)}
+              className="tap-target flex items-center gap-2 rounded-lg border border-black/10 px-3.5 py-2 text-sm font-medium text-slate-600 transition-colors duration-fast ease-out-expo hover:border-black/20 hover:text-slate-900 dark:border-white/10 dark:text-white/70 dark:hover:border-white/20 dark:hover:text-white"
+            >
+              <ScanLine className="h-4 w-4" />
+              Scan
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null)
+                setFormOpen(true)
+              }}
+              aria-label="Add expense"
+              className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <GlassCard>
-          <h3 className="mb-2 text-sm font-medium text-slate-300">Spend by category (this month)</h3>
+      <StatGrid>
+        <StatCard label="This month" value={formatCurrency(stats.total)} icon={Wallet} sensitive />
+        <StatCard label="Top category" value={stats.topCategoryName} icon={TrendingUp} />
+        <StatCard label="Avg/day" value={formatCurrency(stats.avgPerDay)} icon={Calendar} sensitive />
+        <StatCard label="Transactions" value={stats.count} icon={Receipt} />
+      </StatGrid>
+
+      <Section title="Spend by category (this month)">
+        <Card>
           {donutData.length === 0 ? (
             <EmptyState icon={TrendingUp} title="No expenses yet this month" />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
                   {donutData.map((entry, i) => (
-                    <Cell key={entry.name} fill={entry.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
+                    <Cell key={entry.name} fill={entry.color || CHART_SERIES[i % CHART_SERIES.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ background: '#111d2e', border: '1px solid #1e3048' }} />
+                <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps} />
               </PieChart>
             </ResponsiveContainer>
           )}
-        </GlassCard>
+        </Card>
+      </Section>
 
-        <GlassCard>
-          <h3 className="mb-2 text-sm font-medium text-slate-300">Last 30 days</h3>
-          <ResponsiveContainer width="100%" height={220}>
+      <Section title="Last 30 days">
+        <Card>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={last30DaysData}>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} interval={4} />
-              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} width={40} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ background: '#111d2e', border: '1px solid #1e3048' }} />
+              <XAxis dataKey="date" {...axisProps} interval={4} />
+              <YAxis {...axisProps} width={40} />
+              <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps} />
               <Bar dataKey="total" fill="var(--mood-accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </GlassCard>
-      </div>
+        </Card>
+      </Section>
 
-      <ExpenseForm
-        categories={categories}
-        editing={editing}
-        onSubmit={handleSubmit}
-        onCancelEdit={() => setEditing(null)}
-        onAddCategory={addCategory}
-      />
+      <Modal
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? 'Edit expense' : 'Add expense'}
+      >
+        <ExpenseForm
+          categories={categories}
+          editing={editing}
+          onSubmit={handleSubmit}
+          onCancelEdit={() => {
+            setFormOpen(false)
+            setEditing(null)
+          }}
+          onAddCategory={addCategory}
+        />
+      </Modal>
 
-      <GlassCard>
+      <Section title="Transactions">
+        <Card>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <select
             value={filterCategory}
@@ -196,55 +264,29 @@ export function ExpensesPage() {
             aria-label="Filter to date"
             className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-none"
           />
-          <button
-            type="button"
-            onClick={exportCsv}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export CSV
-          </button>
         </div>
 
-        {filteredExpenses.length === 0 ? (
+        {tableRows.length === 0 ? (
           <EmptyState icon={Receipt} title="No expenses recorded yet" description="Add your first expense above." />
         ) : (
-          <div className="flex flex-col divide-y divide-white/5">
-            {filteredExpenses.map((e) => (
-              <div key={e.id} className="flex items-center gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-100">{formatCurrency(Number(e.amount), e.currency)}</span>
-                    {e.category_id && (
-                      <span className="rounded-md bg-mood-accent/10 px-2 py-0.5 text-xs text-mood-accent">
-                        {categoryById.get(e.category_id)?.name ?? 'Unknown'}
-                      </span>
-                    )}
-                  </div>
-                  {e.note && <p className="truncate text-sm text-slate-400">{e.note}</p>}
-                  <p className="text-xs text-slate-600">{formatDate(e.spent_at)}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditing(e)}
-                  aria-label="Edit expense"
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(e)}
-                  aria-label="Delete expense"
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <DataGrid
+            columns={tableColumns}
+            data={tableRows}
+            onEdit={(row) => {
+              const expense = expenseById.get(row.id)
+              if (expense) {
+                setEditing(expense)
+                setFormOpen(true)
+              }
+            }}
+            onDelete={(row) => {
+              const expense = expenseById.get(row.id)
+              if (expense) setDeleteTarget(expense)
+            }}
+          />
         )}
-      </GlassCard>
+        </Card>
+      </Section>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -257,10 +299,7 @@ export function ExpensesPage() {
         }}
       />
 
-      {/* Bills drift across the whole page on a fixed, pointer-events-none
-          layer. They can pass over inputs and text without intercepting a
-          single click or keystroke. */}
-      <RoamingMoney />
+      <ScanModal open={scanOpen} onClose={() => setScanOpen(false)} />
     </div>
   )
 }

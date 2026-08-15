@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { GlassCard } from '../../components/GlassCard'
 import { useToast } from '../../hooks/useToast'
 import type { CarService, CarServicePart } from '../../lib/types'
 import type { CarServiceInput } from './useCar'
@@ -87,63 +86,85 @@ export function ServiceForm({
   }
 
   return (
-    <GlassCard>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <select
-          value={part}
-          aria-label="Part"
-          onChange={(e) => setPart(e.target.value as CarServicePart)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        >
-          {PARTS.map((p) => (
-            <option key={p} value={p}>
-              {p.replace('_', ' ')}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          required
-          placeholder="Label"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="number"
-          placeholder="Last service (km)"
-          value={lastServiceKm}
-          onChange={(e) => setLastServiceKm(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="date"
-          placeholder="Last service date"
-          value={lastServiceDate}
-          onChange={(e) => setLastServiceDate(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="number"
-          placeholder="Interval (km)"
-          value={intervalKm}
-          onChange={(e) => setIntervalKm(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <input
-          type="number"
-          placeholder="Interval (days)"
-          value={intervalDays}
-          onChange={(e) => setIntervalDays(e.target.value)}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
-        />
-        <textarea
-          placeholder="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={2}
-          className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none sm:col-span-2"
-        />
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label htmlFor="service-part" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Part</span>
+          <select
+            id="service-part"
+            value={part}
+            onChange={(e) => setPart(e.target.value as CarServicePart)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          >
+            {PARTS.map((p) => (
+              <option key={p} value={p}>
+                {p.replace('_', ' ')}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label htmlFor="service-label" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Label</span>
+          <input
+            id="service-label"
+            type="text"
+            required
+            placeholder="e.g. Oil change"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="service-last-km" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Last service (km)</span>
+          <input
+            id="service-last-km"
+            type="number"
+            value={lastServiceKm}
+            onChange={(e) => setLastServiceKm(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="service-last-date" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Last service date</span>
+          <input
+            id="service-last-date"
+            type="date"
+            value={lastServiceDate}
+            onChange={(e) => setLastServiceDate(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="service-interval-km" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Interval (km)</span>
+          <input
+            id="service-interval-km"
+            type="number"
+            value={intervalKm}
+            onChange={(e) => setIntervalKm(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="service-interval-days" className="flex flex-col gap-1">
+          <span className="text-micro uppercase text-white/50">Interval (days)</span>
+          <input
+            id="service-interval-days"
+            type="number"
+            value={intervalDays}
+            onChange={(e) => setIntervalDays(e.target.value)}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
+        <label htmlFor="service-note" className="flex flex-col gap-1 sm:col-span-2">
+          <span className="text-micro uppercase text-white/50">Note</span>
+          <textarea
+            id="service-note"
+            placeholder="Optional"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+          />
+        </label>
         <div className="flex gap-2 sm:col-span-2">
           <button
             type="submit"
@@ -163,6 +184,5 @@ export function ServiceForm({
           )}
         </div>
       </form>
-    </GlassCard>
   )
 }

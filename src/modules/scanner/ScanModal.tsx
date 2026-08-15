@@ -1,0 +1,560 @@
+import { useEffect, useRef, useState } from 'react'
+import { Camera, ScanLine, Upload, Check, X, Pencil } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { Modal } from '../../components/Modal'
+import { Portal } from '../../components/Portal'
+import { formatCurrency } from '../../lib/format'
+import { fade, fadeUp } from '../../lib/motion'
+
+interface LineItem {
+  id: string
+  label: string
+  amount: number
+}
+
+interface ScannedInvoice {
+  id: string
+  fileName: string
+  vendor: string
+  date: string
+  category: string
+  amount: number
+  currency: string
+  confidence: number
+  lineItems: LineItem[]
+  status: 'processing' | 'review' | 'approved'
+}
+
+const CATEGORIES = ['Groceries', 'Fuel', 'Pharmacy', 'Utilities', 'Dining', 'Other']
+
+/** Mock extraction — no real OCR is wired yet (confirmed scope: UI scaffold
+ * first, real computer-vision/price-matching pipeline is a scoped follow-up). */
+function mockExtract(fileName: string): Omit<ScannedInvoice, 'id' | 'fileName' | 'status'> {
+  const samples = [
+    {
+      vendor: 'Carrefour Market',
+      category: 'Groceries',
+      amount: 486.5,
+      lineItems: [
+        { id: 'l1', label: 'Produce & bakery', amount: 142.0 },
+        { id: 'l2', label: 'Household supplies', amount: 189.5 },
+        { id: 'l3', label: 'Pantry items', amount: 155.0 },
+      ],
+    },
+    {
+      vendor: 'Total Fuel Station',
+      category: 'Fuel',
+      amount: 620.0,
+      lineItems: [{ id: 'l1', label: '92 Octane, 30L', amount: 620.0 }],
+    },
+    {
+      vendor: 'El Ezaby Pharmacy',
+      category: 'Pharmacy',
+      amount: 214.75,
+      lineItems: [
+        { id: 'l1', label: 'Prescription refill', amount: 168.75 },
+        { id: 'l2', label: 'First-aid supplies', amount: 46.0 },
+      ],
+    },
+  ]
+  const pick = samples[Math.abs(hashCode(fileName)) % samples.length]
+  return {
+    vendor: pick.vendor,
+    date: new Date().toISOString().slice(0, 10),
+    category: pick.category,
+    amount: pick.amount,
+    currency: 'EGP',
+    confidence: 0.86 + (Math.abs(hashCode(fileName)) % 12) / 100,
+    lineItems: pick.lineItems,
+  }
+}
+
+function hashCode(s: string) {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i)
+  return h
+}
+
+export function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [invoices, setInvoices] = useState<ScannedInvoice[]>([])
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
+  const [showCamera, setShowCamera] = useState(false)
+
+  function handleFile(file: File) {
+    const id = crypto.randomUUID()
+    const entry: ScannedInvoice = {
+      id,
+      fileName: file.name,
+      status: 'processing',
+      vendor: '',
+      date: '',
+      category: CATEGORIES[0],
+      amount: 0,
+      currency: 'EGP',
+      confidence: 0,
+      lineItems: [],
+    }
+    setInvoices((prev) => [entry, ...prev])
+
+    // Mock "developing" delay — stands in for the real async OCR pipeline.
+    setTimeout(() => {
+      setInvoices((prev) =>
+        prev.map((inv) => (inv.id === id ? { ...inv, ...mockExtract(file.name), status: 'review' } : inv)),
+      )
+      setReviewingId(id)
+    }, 1400)
+  }
+
+  function handleFilesSelected(files: FileList | null) {
+    if (!files || files.length === 0) return
+    handleFile(files[0])
+  }
+
+  function updateReviewing(patch: Partial<ScannedInvoice>) {
+    if (!reviewingId) return
+    setInvoices((prev) => prev.map((inv) => (inv.id === reviewingId ? { ...inv, ...patch } : inv)))
+  }
+
+  function hangUp() {
+    if (!reviewingId) return
+    setInvoices((prev) => prev.map((inv) => (inv.id === reviewingId ? { ...inv, status: 'approved' } : inv)))
+    setReviewingId(null)
+  }
+
+  function discard(id: string) {
+    setInvoices((prev) => prev.filter((inv) => inv.id !== id))
+    if (reviewingId === id) setReviewingId(null)
+  }
+
+  const reviewing = invoices.find((inv) => inv.id === reviewingId) ?? null
+
+  return (
+    <>
+      <Modal open={open} onClose={onClose} title="Scan a receipt" size="lg">
+        <div className="flex flex-col gap-8">
+          <CaptureCard onFiles={handleFilesSelected} onOpenCamera={() => setShowCamera(true)} inputRef={fileInputRef} />
+
+          {invoices.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-micro uppercase text-white/50">On the hook</h2>
+              <div className="flex flex-col gap-3">
+                <AnimatePresence>
+                  {invoices.map((inv) => (
+                    <InvoiceTicket
+                      key={inv.id}
+                      invoice={inv}
+                      onReview={() => setReviewingId(inv.id)}
+                      onDiscard={() => discard(inv.id)}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </section>
+          )}
+        </div>
+      </Modal>
+
+      {/* Both overlays below render through Portal, same as Modal itself —
+          escaping any .glass ancestor's backdrop-filter, which would otherwise
+          become the containing block for their `fixed` positioning and trap
+          them behind Modal's own (correctly portaled) overlay. See Portal.tsx. */}
+      <ReviewPanel
+        invoice={reviewing}
+        onClose={() => setReviewingId(null)}
+        onChange={updateReviewing}
+        onHangUp={hangUp}
+        onDiscard={() => reviewing && discard(reviewing.id)}
+      />
+
+      <AnimatePresence>
+        {showCamera && (
+          <Portal>
+            <CameraCapture
+              onCapture={(file) => {
+                setShowCamera(false)
+                handleFile(file)
+              }}
+              onClose={() => setShowCamera(false)}
+            />
+          </Portal>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+function CaptureCard({
+  onFiles,
+  onOpenCamera,
+  inputRef,
+}: {
+  onFiles: (files: FileList | null) => void
+  onOpenCamera: () => void
+  inputRef: React.RefObject<HTMLInputElement | null>
+}) {
+  return (
+    <motion.div
+      {...fadeUp}
+      className="flex flex-col items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-8 text-center"
+    >
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mood-accent/15 text-mood-accent">
+        <ScanLine className="h-6 w-6" />
+      </div>
+      <div className="flex flex-col gap-1">
+        <p className="text-base font-medium text-slate-900 dark:text-white">Photograph or upload an invoice</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          It hangs on the hook while it's read, then you check it before it's filed.
+        </p>
+      </div>
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <button
+          type="button"
+          onClick={onOpenCamera}
+          className="tap-target flex items-center justify-center gap-2 rounded-lg bg-mood-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          <Camera className="h-4 w-4" />
+          Scan with camera
+        </button>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="tap-target flex items-center justify-center gap-2 rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/5"
+        >
+          <Upload className="h-4 w-4" />
+          Upload a photo
+        </button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => onFiles(e.target.files)}
+      />
+    </motion.div>
+  )
+}
+
+function CameraCapture({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("This browser can't reach the camera here — upload a photo instead.")
+      return
+    }
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        streamRef.current = stream
+        const video = videoRef.current
+        if (video) {
+          video.srcObject = stream
+          video.onloadedmetadata = () => setReady(true)
+        }
+      })
+      .catch(() => setError("Couldn't reach the camera — check permissions, or upload a photo instead."))
+
+    return () => {
+      cancelled = true
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
+  }, [])
+
+  function capture() {
+    const video = videoRef.current
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0)
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return
+        onCapture(new File([blob], `receipt-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+      },
+      'image/jpeg',
+      0.92,
+    )
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      className="fixed inset-0 z-50 bg-black"
+    >
+      {error ? (
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="text-white">{error}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="tap-target rounded-lg bg-mood-accent px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Close
+          </button>
+        </div>
+      ) : (
+        <>
+          <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 h-full w-full object-cover" />
+          <div className="pointer-events-none absolute inset-8 rounded-2xl border-2 border-mood-accent/60" />
+          <div
+            className="absolute inset-x-0 top-0 flex items-center justify-between p-4"
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cancel"
+              className="tap-target rounded-full bg-black/50 p-2 text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <span className="text-micro uppercase text-white/80">Frame the receipt</span>
+            <span className="w-9" />
+          </div>
+          <div
+            className="absolute inset-x-0 bottom-0 flex items-center justify-center p-8"
+            style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+          >
+            <button
+              type="button"
+              onClick={capture}
+              disabled={!ready}
+              aria-label="Capture photo"
+              className="tap-target flex h-16 w-16 items-center justify-center rounded-full border-4 border-white/80 bg-white/10 disabled:opacity-40"
+            >
+              <span className="h-12 w-12 rounded-full bg-mood-accent" />
+            </button>
+          </div>
+        </>
+      )}
+    </motion.div>
+  )
+}
+
+function InvoiceTicket({
+  invoice,
+  onReview,
+  onDiscard,
+}: {
+  invoice: ScannedInvoice
+  onReview: () => void
+  onDiscard: () => void
+}) {
+  return (
+    <motion.div
+      layout
+      {...fade}
+      exit={{ opacity: 0, transition: { duration: 0.18 } }}
+      className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-4"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mood-accent/15 text-mood-accent">
+        {invoice.status === 'processing' ? (
+          <motion.div
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <ScanLine className="h-4 w-4" />
+          </motion.div>
+        ) : invoice.status === 'approved' ? (
+          <Check className="h-4 w-4" />
+        ) : (
+          <Pencil className="h-4 w-4" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+          {invoice.status === 'processing' ? 'Reading receipt…' : invoice.vendor}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {invoice.status === 'processing'
+            ? invoice.fileName
+            : invoice.status === 'approved'
+              ? `Hung up · ${invoice.category}`
+              : `Needs a look · ${invoice.category}`}
+        </p>
+      </div>
+      {invoice.status !== 'processing' && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+            {formatCurrency(invoice.amount, invoice.currency)}
+          </span>
+          {invoice.status === 'review' && (
+            <button
+              type="button"
+              onClick={onReview}
+              className="tap-target rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-mood-accent"
+            >
+              Review
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onDiscard}
+            aria-label={`Discard ${invoice.vendor || invoice.fileName}`}
+            className="tap-target rounded-lg p-1.5 text-slate-500 dark:text-slate-400"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+function ReviewPanel({
+  invoice,
+  onClose,
+  onChange,
+  onHangUp,
+  onDiscard,
+}: {
+  invoice: ScannedInvoice | null
+  onClose: () => void
+  onChange: (patch: Partial<ScannedInvoice>) => void
+  onHangUp: () => void
+  onDiscard: () => void
+}) {
+  return (
+    <AnimatePresence>
+      {invoice && (
+        <Portal>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+            onClick={onClose}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="glass max-h-[85svh] w-full max-w-lg overflow-y-auto rounded-2xl border p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="font-display text-display-sm text-slate-900 dark:text-white">Check before it's filed</h3>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/5 dark:hover:text-slate-300"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-mood-accent"
+                    style={{ width: `${Math.round(invoice.confidence * 100)}%` }}
+                  />
+                </div>
+                <span className="text-micro uppercase text-white/50">{Math.round(invoice.confidence * 100)}% read</span>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col gap-1">
+                  <span className="text-micro uppercase text-white/50">Vendor</span>
+                  <input
+                    value={invoice.vendor}
+                    onChange={(e) => onChange({ vendor: e.target.value })}
+                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-micro uppercase text-white/50">Date</span>
+                    <input
+                      type="date"
+                      value={invoice.date}
+                      onChange={(e) => onChange({ date: e.target.value })}
+                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-micro uppercase text-white/50">Category</span>
+                    <select
+                      value={invoice.category}
+                      onChange={(e) => onChange({ category: e.target.value })}
+                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                    >
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <span className="text-micro uppercase text-white/50">Line items</span>
+                  <div className="flex flex-col divide-y divide-white/10">
+                    {invoice.lineItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between py-2 text-sm text-slate-200">
+                        <span>{item.label}</span>
+                        <span className="font-medium">{formatCurrency(item.amount, invoice.currency)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-micro uppercase text-white/50">Total</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={invoice.amount}
+                    onChange={(e) => onChange({ amount: Number(e.target.value) || 0 })}
+                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-lg font-semibold text-slate-200 outline-none"
+                  />
+                </label>
+
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={onHangUp}
+                    className="tap-target flex-1 rounded-lg bg-mood-accent py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    Hang it up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDiscard}
+                    className="tap-target rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+                  >
+                    Discard
+                  </button>
+                </div>
+                <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                  Filed to Expenses once hung up — extraction shown here is a preview, not yet backed by live scanning.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        </Portal>
+      )}
+    </AnimatePresence>
+  )
+}

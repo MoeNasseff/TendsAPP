@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Save, Scale, Ruler, Cake, Activity } from 'lucide-react'
-import { GlassCard } from '../../components/GlassCard'
+import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { StatGrid } from '../../components/StatGrid'
+import { Section } from '../../components/Section'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { StatCard } from '../../components/StatCard'
 import {
@@ -76,17 +79,21 @@ export function BodyPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="flex flex-col gap-10">
+      <PageHeader eyebrow="COMPOSITION" title="Body" />
+
+      <StatGrid>
         <StatCard
           icon={Scale}
           label="Weight"
           value={latestWeightKg ? `${toDisplayWeight(latestWeightKg, unit).toFixed(1)} ${wt}` : '—'}
+          sensitive
         />
         <StatCard
           icon={Ruler}
           label="Height"
           value={profile.height_cm ? `${toDisplayLength(profile.height_cm, unit).toFixed(1)} ${len}` : '—'}
+          sensitive
         />
         <StatCard icon={Cake} label="Age" value={age !== null ? `${age}` : '—'} />
         {/* Band folded into the value rather than adding a prop to the shared
@@ -95,15 +102,15 @@ export function BodyPage() {
           icon={Activity}
           label="BMI"
           value={bmi ? `${bmi.toFixed(1)} · ${bmiBand(bmi).label}` : '—'}
+          sensitive
         />
-      </div>
+      </StatGrid>
 
-      <GlassCard>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-slate-200">Measurements</h2>
-          <UnitToggle value={unit} onChange={(unit_system) => saveProfile({ unit_system })} />
-        </div>
-
+      <Section
+        title="Measurements"
+        action={<UnitToggle value={unit} onChange={(unit_system) => saveProfile({ unit_system })} />}
+      >
+        <Card>
         <BodyFigure
           sex={profile.sex}
           values={draft}
@@ -112,9 +119,10 @@ export function BodyPage() {
         />
 
         <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/5 pt-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Weight ({wt})</span>
+          <label htmlFor="body-weight" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Weight ({wt})</span>
             <input
+              id="body-weight"
               type="number"
               step="0.1"
               min="0"
@@ -124,9 +132,10 @@ export function BodyPage() {
               className="form-input w-24 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
             />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Date</span>
+          <label htmlFor="body-taken-at" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Date</span>
             <input
+              id="body-taken-at"
               type="date"
               value={takenAt}
               onChange={(e) => setTakenAt(e.target.value)}
@@ -143,14 +152,16 @@ export function BodyPage() {
             {saving ? 'Saving…' : 'Save session'}
           </button>
         </div>
-      </GlassCard>
+        </Card>
+      </Section>
 
-      <GlassCard>
-        <h2 className="mb-4 text-sm font-semibold text-slate-200">About you</h2>
+      <Section title="About you">
+        <Card>
         <div className="flex flex-wrap gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Height ({len})</span>
+          <label htmlFor="body-height" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Height ({len})</span>
             <input
+              id="body-height"
               type="number"
               step="0.1"
               min="0"
@@ -165,18 +176,20 @@ export function BodyPage() {
               className="form-input w-28 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
             />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Date of birth</span>
+          <label htmlFor="body-birth-date" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Date of birth</span>
             <input
+              id="body-birth-date"
               type="date"
               defaultValue={profile.birth_date ?? ''}
               onBlur={(e) => saveProfile({ birth_date: e.target.value || null })}
               className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
             />
           </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-500">Figure</span>
+          <label htmlFor="body-sex" className="flex flex-col gap-1">
+            <span className="text-micro uppercase text-white/50">Figure</span>
             <select
+              id="body-sex"
               value={profile.sex}
               onChange={(e) => saveProfile({ sex: e.target.value as Sex })}
               className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
@@ -186,12 +199,14 @@ export function BodyPage() {
             </select>
           </label>
         </div>
-      </GlassCard>
+        </Card>
+      </Section>
 
-      <GlassCard>
-        <h2 className="mb-4 text-sm font-semibold text-slate-200">History</h2>
+      <Section title="History">
+        <Card>
         <MeasurementHistory history={history} sex={profile.sex} unit={unit} />
-      </GlassCard>
+        </Card>
+      </Section>
     </div>
   )
 }
@@ -224,7 +239,7 @@ function UnitToggle({
 function SexGate({ onPick }: { onPick: (sex: Sex) => void }) {
   return (
     <div className="flex min-h-[60svh] items-center justify-center">
-      <GlassCard>
+      <Card>
         <div className="flex flex-col items-center gap-4 px-4 py-6 text-center">
           <h2 className="text-base font-semibold text-slate-100">Which figure should we use?</h2>
           <p className="max-w-xs text-sm text-slate-400">
@@ -243,7 +258,7 @@ function SexGate({ onPick }: { onPick: (sex: Sex) => void }) {
             ))}
           </div>
         </div>
-      </GlassCard>
+      </Card>
     </div>
   )
 }

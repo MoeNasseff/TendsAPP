@@ -1,18 +1,29 @@
 import { useMemo, useState } from 'react'
-import { CalendarClock, AlertTriangle, ListChecks, CheckCircle2, Trash2, Pencil, Bell, Check } from 'lucide-react'
+import { CalendarClock, AlertTriangle, ListChecks, CheckCircle2, Trash2, Pencil, Bell, Check, Plus } from 'lucide-react'
 import { StatCard } from '../../components/StatCard'
-import { GlassCard } from '../../components/GlassCard'
+import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { StatGrid } from '../../components/StatGrid'
+import { Modal } from '../../components/Modal'
+import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { Tabs } from '../../components/Tabs'
 import { ReminderPicker } from '../../components/ReminderPicker'
-import { RoamingDog } from '../../components/sprite/RoamingDog'
 import { formatDateTime, getTimeLeft } from '../../lib/format'
 import { useDog } from './useDog'
 import { DogItemForm } from './DogItemForm'
 import { DogHeroBackground } from './DogHeroBackground'
 import type { DogItem } from '../../lib/types'
+
+interface DogItemRow {
+  id: string
+  name: string
+  dose: string
+  due_at: string | null
+  active: boolean
+}
 
 type TabId = 'vaccines' | 'medicines' | 'schedule'
 
@@ -22,6 +33,7 @@ export function DogPage() {
   const [editing, setEditing] = useState<DogItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DogItem | null>(null)
   const [reminderTarget, setReminderTarget] = useState<DogItem | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   const stats = useMemo(() => {
     const now = Date.now()
@@ -51,14 +63,65 @@ export function DogPage() {
     } else {
       await addItem(input)
     }
+    setFormOpen(false)
   }
+
+  const itemRows = useMemo<DogItemRow[]>(
+    () =>
+      visibleItems.map((i) => ({
+        id: i.id,
+        name: i.name,
+        dose: i.dose ?? '',
+        due_at: i.due_at,
+        active: i.active,
+      })),
+    [visibleItems],
+  )
+
+  const itemColumns = useMemo<DataGridColumn<DogItemRow>[]>(
+    () => [
+      { data: 'name', title: 'Name', format: (v, row) => (row.active ? String(v) : `${v} (done)`) },
+      { data: 'dose', title: 'Dose', format: (v) => (v as string) || '—' },
+      {
+        data: 'due_at',
+        title: 'Due',
+        format: (v, row) => {
+          if (!v) return 'No due date'
+          const due = new Date(v as string)
+          const isOverdue = row.active && due.getTime() < Date.now()
+          return isOverdue ? 'Overdue' : `${getTimeLeft(due)} · ${formatDateTime(v as string)}`
+        },
+      },
+    ],
+    [],
+  )
+
+  const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
 
   if (loading) return <PageSkeleton />
   if (!dog) return <EmptyState icon={ListChecks} title="No dog yet" description="Your dog will appear here once seeded." />
 
   return (
-    <div className="flex flex-col gap-5">
-      <GlassCard className="relative overflow-hidden">
+    <div className="flex flex-col gap-10">
+      <PageHeader
+        eyebrow="CARE PROTOCOL"
+        title="Dog"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null)
+              setFormOpen(true)
+            }}
+            aria-label="Add item"
+            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        }
+      />
+
+      <Card className="relative overflow-hidden">
         <DogHeroBackground />
         <div className="relative flex items-center gap-3">
           {dog.photo_url && <img src={dog.photo_url} alt="" className="h-14 w-14 rounded-full object-cover" />}
@@ -67,14 +130,14 @@ export function DogPage() {
             <p className="text-sm text-slate-400">{dog.breed}</p>
           </div>
         </div>
-      </GlassCard>
+      </Card>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <StatGrid>
         <StatCard label="Upcoming (30d)" value={stats.upcoming} icon={CalendarClock} />
         <StatCard label="Overdue" value={stats.overdue} icon={AlertTriangle} />
         <StatCard label="Active items" value={stats.active} icon={ListChecks} />
         <StatCard label="Done this month" value={stats.done} icon={CheckCircle2} />
-      </div>
+      </StatGrid>
 
       <Tabs
         tabs={[
@@ -86,38 +149,24 @@ export function DogPage() {
         onChange={(id) => setTab(id as TabId)}
       />
 
-      <GlassCard>
-        {visibleItems.length === 0 ? (
+      <Card>
+        {itemRows.length === 0 ? (
           <EmptyState icon={ListChecks} title="Nothing here yet" />
         ) : (
-          <div className="flex flex-col divide-y divide-white/5">
-            {visibleItems.map((item) => {
-              const isOverdue = item.active && item.due_at && new Date(item.due_at).getTime() < Date.now()
+          <DataGrid
+            columns={itemColumns}
+            data={itemRows}
+            renderActions={(row) => {
+              const item = itemById.get(row.id)
+              if (!item) return null
               return (
-                <div key={item.id} className="flex items-center gap-3 py-3">
-                  {item.image_url && <img src={item.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" />}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate font-medium text-slate-100">{item.name}</p>
-                      {!item.active && <span className="text-xs text-slate-600">(done)</span>}
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      {item.dose ? `${item.dose} · ` : ''}
-                      {item.due_at ? (
-                        <span className={isOverdue ? 'text-red-400' : ''}>
-                          {isOverdue ? 'Overdue' : getTimeLeft(new Date(item.due_at))} · {formatDateTime(item.due_at)}
-                        </span>
-                      ) : (
-                        'No due date'
-                      )}
-                    </p>
-                  </div>
+                <div className="flex justify-end gap-2">
                   {item.active && (
                     <>
                       <button
                         type="button"
                         onClick={() => setReminderTarget(item)}
-                        className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
+                        className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
                         title="Set reminder"
                         aria-label={`Set reminder for ${item.name}`}
                       >
@@ -126,7 +175,7 @@ export function DogPage() {
                       <button
                         type="button"
                         onClick={() => markDone(item)}
-                        className="flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+                        className="tap-target flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
                         title="Mark done"
                       >
                         <Check className="h-3.5 w-3.5" /> Done
@@ -135,9 +184,12 @@ export function DogPage() {
                   )}
                   <button
                     type="button"
-                    onClick={() => setEditing(item)}
+                    onClick={() => {
+                      setEditing(item)
+                      setFormOpen(true)
+                    }}
                     aria-label={`Edit ${item.name}`}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
+                    className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -145,18 +197,34 @@ export function DogPage() {
                     type="button"
                     onClick={() => setDeleteTarget(item)}
                     aria-label={`Delete ${item.name}`}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
+                    className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               )
-            })}
-          </div>
+            }}
+          />
         )}
-      </GlassCard>
+      </Card>
 
-      <DogItemForm editing={editing} onSubmit={handleSubmit} onCancel={() => setEditing(null)} />
+      <Modal
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditing(null)
+        }}
+        title={editing ? 'Edit item' : 'Add item'}
+      >
+        <DogItemForm
+          editing={editing}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setFormOpen(false)
+            setEditing(null)
+          }}
+        />
+      </Modal>
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -180,10 +248,6 @@ export function DogPage() {
           defaultImageUrl={reminderTarget.image_url}
         />
       )}
-
-      {/* Roams the whole page on a fixed, pointer-events-none layer, so it adds
-          no height here and nothing on the page shifts. */}
-      <RoamingDog />
     </div>
   )
 }

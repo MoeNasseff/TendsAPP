@@ -38,5 +38,7 @@ assets/images/sprites/*.rar
 .omc/
 .code-review-graph/
 .lean-ctx/
+.impeccable/
+graphify-out/
 MASTER_PROMPT.md
 New Text Document.txt

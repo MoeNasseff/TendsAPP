@@ -4,7 +4,7 @@
   "description": "Everything you look after, in one place.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#12303a",
+  "background_color": "#111415",
   "theme_color": "#278276",
   "icons": [
     {
