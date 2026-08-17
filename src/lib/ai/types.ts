@@ -9,15 +9,21 @@ export interface AIProvider {
 }
 
 /** A user's own key for one provider — the shape `ai_provider_configs`
- * (Session 7) will hold. */
+ * exposes to the browser.
+ *
+ * `apiKey` is deliberately absent. The column is not selectable by the
+ * authenticated role (see 20260816000002_ai_provider_configs.sql), so the
+ * client can know *that* a key is set and never what it is; `ai-proxy`
+ * reads the value server-side. A field holding a key that can never be
+ * populated would be a landmine, so there isn't one. */
 export interface AIProviderConfig {
   provider: string
-  apiKey: string
+  hasKey: boolean
   enabled: boolean
 }
 
 export type AIResolution =
-  | { status: 'byok'; provider: AIProvider; apiKey: string }
+  | { status: 'byok'; provider: AIProvider }
   | { status: 'managed'; provider: AIProvider }
   | { status: 'unavailable' }
 

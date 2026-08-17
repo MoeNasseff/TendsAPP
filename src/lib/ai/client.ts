@@ -20,8 +20,10 @@ export function resolveProvider(params: {
 }): AIResolution {
   const { capability, byok, managed } = params
 
-  if (byok && byok.config.enabled && providerSupports(byok.provider, capability)) {
-    return { status: 'byok', provider: byok.provider, apiKey: byok.config.apiKey }
+  // `hasKey` matters as much as `enabled`: an enabled config with no key
+  // stored is not a usable BYOK path, and must not shadow the managed one.
+  if (byok && byok.config.enabled && byok.config.hasKey && providerSupports(byok.provider, capability)) {
+    return { status: 'byok', provider: byok.provider }
   }
 
   if (managed && providerSupports(managed.provider, capability)) {
