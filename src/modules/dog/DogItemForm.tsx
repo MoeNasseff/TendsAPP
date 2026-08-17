@@ -95,7 +95,7 @@ export function DogItemForm({
               id="dogitem-kind"
               value={kind}
               onChange={(e) => setKind(e.target.value as DogItemKind)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             >
               <option value="vaccine">Vaccine</option>
               <option value="medicine">Medicine</option>
@@ -110,7 +110,7 @@ export function DogItemForm({
               placeholder="e.g. Rabies vaccine"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
           </label>
         </div>
@@ -122,7 +122,7 @@ export function DogItemForm({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="dogitem-dose" className="flex flex-col gap-1">
@@ -133,7 +133,7 @@ export function DogItemForm({
             placeholder="Optional"
             value={dose}
             onChange={(e) => setDose(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -143,7 +143,7 @@ export function DogItemForm({
               id="dogitem-schedule-type"
               value={scheduleType}
               onChange={(e) => setScheduleType(e.target.value as ScheduleType)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             >
               <option value="once">Once</option>
               <option value="recurring">Recurring</option>
@@ -156,7 +156,7 @@ export function DogItemForm({
               type="datetime-local"
               value={dueAt}
               onChange={(e) => setDueAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
           </label>
           {scheduleType === 'recurring' && (
@@ -167,7 +167,7 @@ export function DogItemForm({
                 type="number"
                 value={repeatDays}
                 onChange={(e) => setRepeatDays(e.target.value)}
-                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
               />
             </label>
           )}

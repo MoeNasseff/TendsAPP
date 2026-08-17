@@ -129,7 +129,7 @@ export function BodyPage() {
               inputMode="decimal"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="form-input w-24 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+              className="form-input w-24 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
             />
           </label>
           <label htmlFor="body-taken-at" className="flex flex-col gap-1">
@@ -139,7 +139,7 @@ export function BodyPage() {
               type="date"
               value={takenAt}
               onChange={(e) => setTakenAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
             />
           </label>
           <button
@@ -173,7 +173,7 @@ export function BodyPage() {
                   height_cm: Number.isFinite(v) && v > 0 ? Number(toStoredLength(v, unit).toFixed(1)) : null,
                 })
               }}
-              className="form-input w-28 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+              className="form-input w-28 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
             />
           </label>
           <label htmlFor="body-birth-date" className="flex flex-col gap-1">
@@ -183,7 +183,7 @@ export function BodyPage() {
               type="date"
               defaultValue={profile.birth_date ?? ''}
               onBlur={(e) => saveProfile({ birth_date: e.target.value || null })}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
             />
           </label>
           <label htmlFor="body-sex" className="flex flex-col gap-1">
@@ -192,7 +192,7 @@ export function BodyPage() {
               id="body-sex"
               value={profile.sex}
               onChange={(e) => saveProfile({ sex: e.target.value as Sex })}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
             >
               <option value="female">Female</option>
               <option value="male">Male</option>

@@ -216,7 +216,7 @@ function SiteColumn({
                 onChange={(e) => onChange(site.key, e.target.value)}
                 placeholder="—"
                 aria-label={`${site.label} in ${unit}`}
-                className="form-input w-14 rounded-lg border border-white/10 bg-black/20 px-1.5 py-1 text-center text-xs text-slate-200 outline-none focus:border-mood-accent sm:w-16"
+                className="form-input w-14 rounded-lg border border-white/10 bg-black/20 px-1.5 py-1 text-center text-xs text-slate-200 outline-hidden focus:border-mood-accent sm:w-16"
               />
               <span className="text-[10px] text-slate-600">{unit}</span>
             </span>

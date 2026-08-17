@@ -240,7 +240,7 @@ export function ExpensesPage() {
             value={filterCategory}
             aria-label="Filter by category"
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -254,7 +254,7 @@ export function ExpensesPage() {
             value={filterFrom}
             onChange={(e) => setFilterFrom(e.target.value)}
             aria-label="Filter from date"
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
           />
           <span className="text-xs text-slate-500">to</span>
           <input
@@ -262,7 +262,7 @@ export function ExpensesPage() {
             value={filterTo}
             onChange={(e) => setFilterTo(e.target.value)}
             aria-label="Filter to date"
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
           />
         </div>
 

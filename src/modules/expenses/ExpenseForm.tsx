@@ -90,7 +90,7 @@ export function ExpenseForm({
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="expense-spent-at" className="flex flex-col gap-1">
@@ -101,7 +101,7 @@ export function ExpenseForm({
             required
             value={spentAt}
             onChange={(e) => setSpentAt(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <div className="flex flex-col gap-1 sm:col-span-2">
@@ -112,7 +112,7 @@ export function ExpenseForm({
               value={categoryId}
               aria-label="Category"
               onChange={(e) => setCategoryId(e.target.value)}
-              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             >
               <option value="">No category</option>
               {categories.map((c) => (
@@ -141,7 +141,7 @@ export function ExpenseForm({
               aria-label="New category name"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
             <input
               type="color"
@@ -168,7 +168,7 @@ export function ExpenseForm({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
 

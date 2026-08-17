@@ -93,7 +93,7 @@ export function ServiceForm({
             id="service-part"
             value={part}
             onChange={(e) => setPart(e.target.value as CarServicePart)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           >
             {PARTS.map((p) => (
               <option key={p} value={p}>
@@ -111,7 +111,7 @@ export function ServiceForm({
             placeholder="e.g. Oil change"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="service-last-km" className="flex flex-col gap-1">
@@ -121,7 +121,7 @@ export function ServiceForm({
             type="number"
             value={lastServiceKm}
             onChange={(e) => setLastServiceKm(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="service-last-date" className="flex flex-col gap-1">
@@ -131,7 +131,7 @@ export function ServiceForm({
             type="date"
             value={lastServiceDate}
             onChange={(e) => setLastServiceDate(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="service-interval-km" className="flex flex-col gap-1">
@@ -141,7 +141,7 @@ export function ServiceForm({
             type="number"
             value={intervalKm}
             onChange={(e) => setIntervalKm(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="service-interval-days" className="flex flex-col gap-1">
@@ -151,7 +151,7 @@ export function ServiceForm({
             type="number"
             value={intervalDays}
             onChange={(e) => setIntervalDays(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <label htmlFor="service-note" className="flex flex-col gap-1 sm:col-span-2">
@@ -162,7 +162,7 @@ export function ServiceForm({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
         <div className="flex gap-2 sm:col-span-2">

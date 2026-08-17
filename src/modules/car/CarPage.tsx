@@ -190,7 +190,7 @@ export function CarPage() {
               placeholder={car.current_odometer_km.toString()}
               value={odometerInput}
               onChange={(e) => setOdometerInput(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
           </div>
           <button

@@ -104,7 +104,7 @@ export function MedForm({
               placeholder="e.g. Ibuprofen"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
           </label>
           <label htmlFor="med-dosage" className="flex flex-col gap-1">
@@ -115,7 +115,7 @@ export function MedForm({
               placeholder="e.g. 500mg"
               value={dosage}
               onChange={(e) => setDosage(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
           </label>
         </div>
@@ -127,7 +127,7 @@ export function MedForm({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
           />
         </label>
 
@@ -140,7 +140,7 @@ export function MedForm({
                   type="time"
                   value={t}
                   onChange={(e) => updateTime(i, e.target.value)}
-                  className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-none"
+                  className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
                 />
                 {times.length > 1 && (
                   <button

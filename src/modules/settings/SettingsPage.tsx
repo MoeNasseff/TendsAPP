@@ -110,7 +110,7 @@ export function SettingsPage() {
             onChange={(e) => setDisplayName(e.target.value)}
             onBlur={handleNameBlur}
             placeholder="Add your name"
-            className="form-input rounded-lg border border-black/10 bg-black/[0.02] px-3 py-2 text-sm text-slate-900 outline-none dark:border-white/10 dark:bg-black/20 dark:text-slate-200"
+            className="form-input rounded-lg border border-black/10 bg-black/[0.02] px-3 py-2 text-sm text-slate-900 outline-hidden dark:border-white/10 dark:bg-black/20 dark:text-slate-200"
           />
         </label>
 

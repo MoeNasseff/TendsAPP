@@ -52,7 +52,7 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
             animate={{ opacity: 1 }}
             exit={reduce ? undefined : { opacity: 0 }}
             transition={{ duration: DUR.fast, ease: EASE }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
             onClick={onClose}
           >
             <motion.div

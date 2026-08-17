@@ -80,7 +80,7 @@ export function ReminderPicker({
             animate={{ opacity: 1 }}
             exit={reduce ? undefined : { opacity: 0 }}
             transition={{ duration: DUR.fast, ease: EASE }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
             onClick={onClose}
           >
             <motion.div
@@ -98,7 +98,7 @@ export function ReminderPicker({
               required
               value={fireAt}
               onChange={(e) => setFireAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
             />
             <div>
               <p className="mb-1.5 text-xs text-slate-500">Channels</p>

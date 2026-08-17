@@ -2,6 +2,7 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript", "oxc"],
   "ignorePatterns": [
+    "assets/**",
     "src/components/sprite/**",
     "src/hooks/useSpriteAnimation.ts",
     "src/lib/sprite/**",

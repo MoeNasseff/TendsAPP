@@ -510,7 +510,7 @@ function ReviewPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-xs sm:items-center"
             onClick={onClose}
           >
             <motion.div
@@ -549,7 +549,7 @@ function ReviewPanel({
                   <input
                     value={invoice.vendor}
                     onChange={(e) => onChange({ vendor: e.target.value })}
-                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
                   />
                 </label>
 
@@ -560,7 +560,7 @@ function ReviewPanel({
                       type="date"
                       value={invoice.date}
                       onChange={(e) => onChange({ date: e.target.value })}
-                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -568,7 +568,7 @@ function ReviewPanel({
                     <select
                       value={invoice.category}
                       onChange={(e) => onChange({ category: e.target.value })}
-                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-none"
+                      className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
                     >
                       {CATEGORIES.map((c) => (
                         <option key={c} value={c}>
@@ -598,7 +598,7 @@ function ReviewPanel({
                     step="0.01"
                     value={invoice.amount}
                     onChange={(e) => onChange({ amount: Number(e.target.value) || 0 })}
-                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-lg font-semibold text-slate-200 outline-none"
+                    className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-lg font-semibold text-slate-200 outline-hidden"
                   />
                 </label>
 
