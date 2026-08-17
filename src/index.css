@@ -76,6 +76,14 @@
    the inline bootstrap script in index.html and src/lib/theme.ts. */
 :root[data-theme='light'] {
   --brand-secondary-rgb: 240 242 241;
+  /* NOTE: overriding the channel here does NOT change `var(--brand-secondary)`.
+     BrandProvider.tsx writes --brand-secondary (and --brand-primary/-accent/
+     -on-primary) as INLINE styles on <html>, and an inline style outranks any
+     stylesheet rule, so the derived token stays pinned to brand.config.json's
+     dark hex in both themes. Tailwind utilities are unaffected because they read
+     the channel var; only direct `var(--brand-secondary)` consumers are —
+     `body { background }` and the scrollbar track below. Pre-existing, and
+     unrelated to Tailwind 4. See tasks/current-theme-spec.md §1.14. */
 
   --surface-lowest-rgb: 227 230 229;
   --surface-rgb: 240 242 241;
