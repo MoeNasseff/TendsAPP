@@ -57,11 +57,21 @@ WHATSAPP_VERIFY_TOKEN=
    ```
    `--no-verify-jwt` is required because both are invoked without a Supabase user JWT (by `pg_cron`/`pg_net` and by Telegram, respectively). Each implements its own auth instead: `dispatch-reminders` checks `Authorization: Bearer $CRON_SECRET`; `telegram-webhook` checks the `x-telegram-bot-api-secret-token` header.
 
-2. **Set secrets** (see above), **then create the vault secret the cron job reads at runtime** (its value must never be a literal in a committed migration — `pg_cron` jobs are plain SQL text, so the `dispatch-reminders` cron job reads `CRON_SECRET` from Supabase Vault instead of embedding it):
+2. **Set secrets** (see above), **then create the two vault secrets the cron job reads at runtime.** `pg_cron` jobs are stored as plain SQL text, so neither the shared secret nor the project URL may be a literal in a committed migration — the `dispatch-reminders` job reads both from Supabase Vault. **Vault secrets are per-project and are created by no migration**, so a brand-new project needs both of these before the job's first tick:
    ```sql
    select vault.create_secret('<same value as the CRON_SECRET Edge Function secret>', 'cron_secret');
+   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1', 'functions_base_url');
    ```
-   Then push migrations (`supabase db push`) — the migration enables `pg_cron`/`pg_net` and schedules both jobs. If you rotate `CRON_SECRET`, update both the Edge Function secret (`supabase secrets set CRON_SECRET=...`) and the vault secret (`select vault.update_secret((select id from vault.secrets where name = 'cron_secret'), '<new value>')`).
+   Then push migrations (`supabase db push`) — the migration enables `pg_cron`/`pg_net` and schedules both jobs.
+
+   If either secret is missing the job does not error, it goes quiet — `'Bearer ' || null` and `null || '/dispatch-reminders'` both evaluate to null. So verify rather than assume:
+   ```sql
+   select name from vault.decrypted_secrets where name in ('cron_secret', 'functions_base_url');
+   select status, count(*) from cron.job_run_details
+     where jobid = (select jobid from cron.job where jobname = 'dispatch-reminders')
+     group by status;
+   ```
+   If you rotate `CRON_SECRET`, update both the Edge Function secret (`supabase secrets set CRON_SECRET=...`) and the vault secret (`select vault.update_secret((select id from vault.secrets where name = 'cron_secret'), '<new value>')`).
 
 3. **Register the Telegram webhook** (once, after deploying):
    ```

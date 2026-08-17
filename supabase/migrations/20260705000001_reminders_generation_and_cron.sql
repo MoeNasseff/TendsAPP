@@ -79,15 +79,23 @@ create extension if not exists pg_net with schema extensions;
 
 select cron.schedule('generate-reminders', '*/15 * * * *', $$select public.generate_reminders()$$);
 
--- CRON_SECRET is read from Supabase Vault at execution time (never a
--- literal in this file) — see supabase/README.md for the one-time
--- `select vault.create_secret(...)` setup step this depends on.
+-- Both the functions base URL and CRON_SECRET are read from Supabase Vault at
+-- execution time, so this file contains no project-specific literal and can be
+-- pushed to any project unchanged. Vault secrets are per-project and are NOT
+-- created by any migration — see supabase/README.md for the two one-time
+-- `select vault.create_secret(...)` calls this depends on.
+--
+-- If either secret is missing, `'Bearer ' || null` and `null || '/...'` both
+-- evaluate to null and dispatch fails *silently*. Create them before the first
+-- tick, and verify with the query in the README rather than waiting to notice
+-- that reminders stopped arriving.
 select cron.schedule(
   'dispatch-reminders',
   '* * * * *',
   $$
   select net.http_post(
-    url := 'https://xlvpuagnzukdcxywizzi.supabase.co/functions/v1/dispatch-reminders',
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'functions_base_url')
+             || '/dispatch-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
