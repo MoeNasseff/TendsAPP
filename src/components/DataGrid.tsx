@@ -90,7 +90,7 @@ export function DataGrid<T extends { id: string }>({
               type="button"
               onClick={() => onEdit(row)}
               aria-label="Edit"
-              className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
+              className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-brand-400"
             >
               <Pencil className="h-4 w-4" />
             </button>
@@ -100,7 +100,7 @@ export function DataGrid<T extends { id: string }>({
               type="button"
               onClick={() => onDelete(row)}
               aria-label="Delete"
-              className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
+              className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-500"
             >
               <Trash2 className="h-4 w-4" />
             </button>

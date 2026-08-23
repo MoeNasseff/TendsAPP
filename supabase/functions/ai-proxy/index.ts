@@ -28,7 +28,14 @@ const MAX_BODY_BYTES = 15 * 1024 * 1024
 // only add a deploy-time way to break the app.
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  // `apikey` and `x-client-info` are sent by supabase-js on every
+  // functions.invoke call, and both are non-simple headers, so omitting them
+  // makes the browser fail the preflight and the request never leaves the
+  // page. That surfaced as a "Could not reach the service" transport error
+  // that looked like a network or key problem — the proxy itself answered a
+  // hand-rolled fetch with those headers absent perfectly well. Keep this
+  // list in sync with whatever supabase-js sends.
+  'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 

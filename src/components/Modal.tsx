@@ -36,18 +36,18 @@ export function Modal({
               animate={{ opacity: 1, scale: 1 }}
               exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
               transition={{ duration: DUR.base, ease: EASE }}
-              className={`glass max-h-[85svh] w-full overflow-y-auto rounded-2xl border p-6 ${
+              className={`max-h-[85svh] w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-white/10 dark:bg-gray-900 dark:shadow-none ${
                 size === 'lg' ? 'max-w-3xl' : 'max-w-lg'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="font-display text-display-sm text-slate-900 dark:text-white">{title}</h3>
+                <h3 className="text-display-sm font-semibold text-gray-900 dark:text-white">{title}</h3>
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="tap-target rounded-lg p-1.5 text-slate-500 transition-colors duration-fast ease-out-expo hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/5 dark:hover:text-slate-300"
+                  className="tap-target rounded-lg p-1.5 text-gray-500 transition-colors duration-fast ease-out-expo hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
                 >
                   <X className="h-4 w-4" />
                 </button>

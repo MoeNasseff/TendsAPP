@@ -114,7 +114,7 @@ export function DogPage() {
               setFormOpen(true)
             }}
             aria-label="Add item"
-            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+            className="rounded-lg bg-brand-500 p-2 text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -127,7 +127,7 @@ export function DogPage() {
           {dog.photo_url && <img src={dog.photo_url} alt="" className="h-14 w-14 rounded-full object-cover" />}
           <div>
             <h2 className="text-lg font-semibold text-slate-100">{dog.name}</h2>
-            <p className="text-sm text-slate-400">{dog.breed}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{dog.breed}</p>
           </div>
         </div>
       </Card>
@@ -166,7 +166,7 @@ export function DogPage() {
                       <button
                         type="button"
                         onClick={() => setReminderTarget(item)}
-                        className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
+                        className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-brand-400"
                         title="Set reminder"
                         aria-label={`Set reminder for ${item.name}`}
                       >
@@ -175,7 +175,7 @@ export function DogPage() {
                       <button
                         type="button"
                         onClick={() => markDone(item)}
-                        className="tap-target flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+                        className="tap-target flex items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-600 hover:border-brand-500 hover:text-brand-500 dark:border-white/10 dark:text-gray-400 dark:hover:border-brand-400 dark:hover:text-brand-400"
                         title="Mark done"
                       >
                         <Check className="h-3.5 w-3.5" /> Done
@@ -189,7 +189,7 @@ export function DogPage() {
                       setFormOpen(true)
                     }}
                     aria-label={`Edit ${item.name}`}
-                    className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-mood-accent"
+                    className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-brand-400"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -197,7 +197,7 @@ export function DogPage() {
                     type="button"
                     onClick={() => setDeleteTarget(item)}
                     aria-label={`Delete ${item.name}`}
-                    className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400"
+                    className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-500"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

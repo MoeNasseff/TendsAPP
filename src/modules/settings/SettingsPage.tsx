@@ -3,6 +3,7 @@ import { Camera, Check, Laptop, Moon, Sun } from 'lucide-react'
 import { PageHeader } from '../../components/PageHeader'
 import { Card } from '../../components/Card'
 import { useAuth } from '../../hooks/useAuth'
+import { useAIProviders } from '../../hooks/useAIProviders'
 import { useProfile } from '../../hooks/useProfile'
 import { useTheme } from '../../hooks/useTheme'
 import type { ThemeMode } from '../../lib/theme'
@@ -145,6 +146,8 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      <AIProviderSettings />
+
       <Card>
         <button
           type="button"
@@ -155,5 +158,133 @@ export function SettingsPage() {
         </button>
       </Card>
     </div>
+  )
+}
+
+/**
+ * Session 8 / Packet 5c — AI provider settings.
+ *
+ * Deliberately has no reveal control. `api_key` is not in the authenticated
+ * role's column grants, so the browser genuinely cannot read a key back — an
+ * eye toggle would have nothing to show. "Test connection" proves a key works
+ * instead, which is what the reveal would have been used for.
+ *
+ * The key is held in local state only while it is being typed, and cleared the
+ * moment it is saved, so it never survives in component state or a re-render.
+ */
+function AIProviderSettings() {
+  const { providers, states, loading, testing, saveKey, setEnabled, removeKey, testConnection } =
+    useAIProviders()
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [notes, setNotes] = useState<Record<string, string>>({})
+
+  if (loading) return null
+
+  const active = states.find((s) => s.hasKey && s.enabled)
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">AI scanning</h2>
+        <p className="text-xs text-slate-500 dark:text-white/50">
+          {active
+            ? `Using your own ${providers.find((p) => p.id === active.provider)?.label} key.`
+            : 'Using the shared managed key. Test the connection to confirm it is available — the app cannot see that from here.'}
+        </p>
+      </div>
+
+      {providers.map((provider) => {
+        const state = states.find((s) => s.provider === provider.id)
+        const draft = drafts[provider.id] ?? ''
+        const note = notes[provider.id]
+
+        return (
+          <div key={provider.id} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-micro uppercase text-slate-500 dark:text-white/50">
+                {provider.label} API key
+              </span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={draft}
+                onChange={(e) => setDrafts((d) => ({ ...d, [provider.id]: e.target.value }))}
+                placeholder={state?.hasKey ? '•••••••••••••••• saved' : 'Paste your key'}
+                className="form-input rounded-lg border border-black/10 bg-black/[0.02] px-3 py-2 text-sm text-slate-900 outline-hidden dark:border-white/10 dark:bg-black/20 dark:text-slate-200"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!draft.trim()}
+                onClick={async () => {
+                  const { error } = await saveKey(provider.id, draft.trim())
+                  // Cleared either way: a failed save must not leave the key
+                  // sitting in state waiting to be re-rendered.
+                  setDrafts((d) => ({ ...d, [provider.id]: '' }))
+                  setNotes((n) => ({
+                    ...n,
+                    [provider.id]: error ? 'Could not save the key.' : 'Key saved.',
+                  }))
+                }}
+                className="tap-target rounded-lg bg-brand-500 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-40"
+              >
+                Save key
+              </button>
+
+              <button
+                type="button"
+                disabled={testing === provider.id}
+                onClick={async () => {
+                  const result = await testConnection(provider.id)
+                  setNotes((n) => ({
+                    ...n,
+                    [provider.id]: result.ok ? 'Connection works.' : result.reason,
+                  }))
+                }}
+                className="tap-target rounded-lg border border-black/10 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-black/20 disabled:opacity-40 dark:border-white/10 dark:text-white/70 dark:hover:border-white/20"
+              >
+                {testing === provider.id ? 'Testing…' : 'Test connection'}
+              </button>
+
+              {state?.hasKey && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setEnabled(provider.id, !state.enabled)}
+                    aria-pressed={state.enabled}
+                    className="tap-target rounded-lg border border-black/10 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-black/20 dark:border-white/10 dark:text-white/70 dark:hover:border-white/20"
+                  >
+                    {state.enabled ? 'Disable' : 'Enable'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await removeKey(provider.id)
+                      setNotes((n) => ({ ...n, [provider.id]: 'Key removed.' }))
+                    }}
+                    className="tap-target rounded-lg px-3 py-2 text-xs font-medium text-red-600 hover:opacity-80 dark:text-red-400"
+                  >
+                    Remove
+                  </button>
+                </>
+              )}
+            </div>
+
+            {note && <p className="text-xs text-slate-500 dark:text-white/50">{note}</p>}
+          </div>
+        )
+      })}
+
+      {/* Sits directly under the per-provider result line, so it has to read
+          as background rather than as a second status — "no provider
+          available" beneath a green "Connection works" looked like a
+          contradiction. */}
+      <p className="text-xs text-slate-500 dark:text-white/50">
+        Adding your own key is optional. Expenses can always be entered manually, with or without
+        a provider.
+      </p>
+    </Card>
   )
 }

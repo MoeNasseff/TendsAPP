@@ -3,6 +3,7 @@
   "shortName": "Tend",
   "tagline": "Everything you look after, in one place.",
   "logo": { "src": "/brand/logo.svg", "alt": "Tend" },
+  "logoDark": "/brand/logo-dark.svg",
   "favicon": "/brand/favicon.svg",
   "icon192": "/brand/icon-192.png",
   "icon512": "/brand/icon-512.png",

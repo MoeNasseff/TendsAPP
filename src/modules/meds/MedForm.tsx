@@ -96,7 +96,7 @@ export function MedForm({
         <ImageUpload folder="meds" value={imageUrl} onChange={setImageUrl} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label htmlFor="med-name" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Med name</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Med name</span>
             <input
               id="med-name"
               type="text"
@@ -104,35 +104,35 @@ export function MedForm({
               placeholder="e.g. Ibuprofen"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
           </label>
           <label htmlFor="med-dosage" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Dosage</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Dosage</span>
             <input
               id="med-dosage"
               type="text"
               placeholder="e.g. 500mg"
               value={dosage}
               onChange={(e) => setDosage(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
           </label>
         </div>
         <label htmlFor="med-description" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Description</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Description</span>
           <textarea
             id="med-description"
             placeholder="Optional"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
 
         <div>
-          <p className="mb-1.5 text-micro uppercase text-white/50">Times of day</p>
+          <p className="mb-1.5 text-micro uppercase text-gray-500 dark:text-gray-400">Times of day</p>
           <div className="flex flex-wrap gap-2">
             {times.map((t, i) => (
               <div key={i} className="flex items-center gap-1">
@@ -140,7 +140,7 @@ export function MedForm({
                   type="time"
                   value={t}
                   onChange={(e) => updateTime(i, e.target.value)}
-                  className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+                  className="form-input rounded-lg border px-2 py-1.5 text-sm outline-hidden"
                 />
                 {times.length > 1 && (
                   <button
@@ -157,7 +157,7 @@ export function MedForm({
             <button
               type="button"
               onClick={addTimeSlot}
-              className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-600 hover:border-brand-500 hover:text-brand-500 dark:border-white/15 dark:text-gray-400 dark:hover:border-brand-400 dark:hover:text-brand-400"
             >
               + Time
             </button>
@@ -165,7 +165,7 @@ export function MedForm({
         </div>
 
         <div>
-          <p className="mb-1.5 text-micro uppercase text-white/50">Days of week</p>
+          <p className="mb-1.5 text-micro uppercase text-gray-500 dark:text-gray-400">Days of week</p>
           <div className="flex gap-1.5">
             {WEEKDAYS.map((label, i) => (
               <button
@@ -173,7 +173,9 @@ export function MedForm({
                 type="button"
                 onClick={() => toggleDay(i)}
                 className={`tap-target h-8 w-8 rounded-lg text-xs font-medium transition-colors ${
-                  daysOfWeek.includes(i) ? 'bg-mood-accent text-white' : 'bg-black/20 text-slate-500'
+                  daysOfWeek.includes(i)
+                    ? 'bg-brand-500 text-white'
+                    : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400'
                 }`}
               >
                 {label[0]}
@@ -186,7 +188,7 @@ export function MedForm({
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-mood-accent py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-500 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             {submitting ? 'Saving…' : editing ? 'Update med' : 'Add med'}
           </button>
@@ -194,7 +196,7 @@ export function MedForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+              className="rounded-lg border border-gray-300 px-4 text-sm text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
             >
               Cancel
             </button>

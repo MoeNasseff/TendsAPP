@@ -123,7 +123,7 @@ export function MedsPage() {
               setFormOpen(true)
             }}
             aria-label="Add med"
-            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+            className="rounded-lg bg-brand-500 p-2 text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -162,7 +162,9 @@ export function MedsPage() {
                     type="button"
                     onClick={() => (log ? undoTaken(log.id) : markTaken(slot.med, slot.time))}
                     className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      log ? 'bg-mood-accent/10 text-mood-accent' : 'border border-white/10 text-slate-400 hover:border-mood-accent hover:text-mood-accent'
+                      log
+                          ? 'bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400'
+                          : 'border border-gray-300 text-gray-600 hover:border-brand-500 hover:text-brand-500 dark:border-white/10 dark:text-gray-400 dark:hover:border-brand-400 dark:hover:text-brand-400'
                     }`}
                   >
                     {log ? (

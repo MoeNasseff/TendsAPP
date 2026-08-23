@@ -81,7 +81,7 @@ export function ExpenseForm({
   return (
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label htmlFor="expense-amount" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Amount</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Amount</span>
           <input
             id="expense-amount"
             type="number"
@@ -90,29 +90,29 @@ export function ExpenseForm({
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="expense-spent-at" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Date</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Date</span>
           <input
             id="expense-spent-at"
             type="date"
             required
             value={spentAt}
             onChange={(e) => setSpentAt(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <div className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-micro uppercase text-white/50">Category</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Category</span>
           <div className="flex gap-2">
             <select
               id="expense-category"
               value={categoryId}
               aria-label="Category"
               onChange={(e) => setCategoryId(e.target.value)}
-              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input flex-1 rounded-lg border px-3 py-2 text-sm outline-hidden"
             >
               <option value="">No category</option>
               {categories.map((c) => (
@@ -124,7 +124,7 @@ export function ExpenseForm({
             <button
               type="button"
               onClick={() => setShowNewCategory((v) => !v)}
-              className="shrink-0 rounded-lg border border-white/10 px-3 text-slate-400 hover:border-mood-accent hover:text-mood-accent"
+              className="shrink-0 rounded-lg border border-gray-300 px-3 text-gray-600 hover:border-brand-500 hover:text-brand-500 dark:border-white/10 dark:text-gray-400 dark:hover:border-brand-400 dark:hover:text-brand-400"
               title="New category"
               aria-label="New category"
             >
@@ -141,19 +141,19 @@ export function ExpenseForm({
               aria-label="New category name"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              className="form-input flex-1 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input flex-1 rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
             <input
               type="color"
               aria-label="New category color"
               value={newCategoryColor}
               onChange={(e) => setNewCategoryColor(e.target.value)}
-              className="h-9 w-10 rounded-lg border border-white/10 bg-black/20"
+              className="h-9 w-10 rounded-lg border border-gray-300 bg-white dark:border-white/10 dark:bg-white/5"
             />
             <button
               type="button"
               onClick={handleAddCategory}
-              className="shrink-0 rounded-lg bg-mood-accent px-3 text-sm font-medium text-white"
+              className="shrink-0 rounded-lg bg-brand-500 px-3 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
             >
               Add
             </button>
@@ -161,14 +161,14 @@ export function ExpenseForm({
         )}
 
         <label htmlFor="expense-note" className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-micro uppercase text-white/50">Note</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Note</span>
           <textarea
             id="expense-note"
             placeholder="Optional"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
 
@@ -176,7 +176,7 @@ export function ExpenseForm({
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-mood-accent py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-500 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             {submitting ? 'Saving…' : editing ? 'Update expense' : 'Add expense'}
           </button>
@@ -184,7 +184,7 @@ export function ExpenseForm({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+              className="rounded-lg border border-gray-300 px-4 text-sm text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
             >
               Cancel
             </button>

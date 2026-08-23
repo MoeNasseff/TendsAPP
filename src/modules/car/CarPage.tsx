@@ -159,7 +159,7 @@ export function CarPage() {
               setFormOpen(true)
             }}
             aria-label="Add service"
-            className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+            className="rounded-lg bg-brand-500 p-2 text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -190,13 +190,13 @@ export function CarPage() {
               placeholder={car.current_odometer_km.toString()}
               value={odometerInput}
               onChange={(e) => setOdometerInput(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
           </div>
           <button
             type="submit"
             disabled={submittingOdometer}
-            className="rounded-lg bg-mood-accent px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             Log
           </button>

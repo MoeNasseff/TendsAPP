@@ -157,7 +157,7 @@ export function BodyFigure({ sex, values, onChange, unit }: BodyFigureProps) {
 function Leader({ site, x, filled }: { site: SiteDef; x: number; filled: boolean }) {
   const edge = site.side === 'left' ? 0 : VIEWBOX.width
   return (
-    <g className={filled ? 'text-mood-accent' : 'text-slate-600'}>
+    <g className={filled ? 'text-brand-500' : 'text-gray-400 dark:text-gray-600'}>
       <line
         x1={x}
         y1={site.y}
@@ -203,7 +203,7 @@ function SiteColumn({
           <label
             className={`flex flex-col gap-0.5 ${side === 'left' ? 'items-end text-right' : 'items-start text-left'}`}
           >
-            <span className="text-[10px] font-medium text-slate-400" title={site.hint}>
+            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400" title={site.hint}>
               {site.label}
             </span>
             <span className="flex items-center gap-1">
@@ -216,7 +216,7 @@ function SiteColumn({
                 onChange={(e) => onChange(site.key, e.target.value)}
                 placeholder="—"
                 aria-label={`${site.label} in ${unit}`}
-                className="form-input w-14 rounded-lg border border-white/10 bg-black/20 px-1.5 py-1 text-center text-xs text-slate-200 outline-hidden focus:border-mood-accent sm:w-16"
+                className="form-input w-14 rounded-lg border px-1.5 py-1 text-center text-xs outline-hidden sm:w-16"
               />
               <span className="text-[10px] text-slate-600">{unit}</span>
             </span>

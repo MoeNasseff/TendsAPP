@@ -1,0 +1,9 @@
+<svg width="150" height="40" viewBox="0 0 150 40" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tend">
+  <!-- Dark-mode wordmark. Identical to logo.svg except the text fill, which is
+       near-white so it reads on the gray-900 sidebar. Keep the two in sync. -->
+  <g transform="translate(0 4) scale(0.8)">
+    <rect x="0" y="0" width="40" height="40" rx="11" fill="#278276"/>
+    <path d="M11 13.5C11 12.6716 11.6716 12 12.5 12H27.5C28.3284 12 29 12.6716 29 13.5C29 14.3284 28.3284 15 27.5 15H22V27.5C22 28.3284 21.3284 29 20.5 29C19.6716 29 19 28.3284 19 27.5V15H12.5C11.6716 15 11 14.3284 11 13.5Z" fill="#ffffff"/>
+  </g>
+  <text x="41" y="27.5" font-family="Outfit, Inter, system-ui, sans-serif" font-size="23" font-weight="700" fill="#F2F4F7">Tend</text>
+</svg>

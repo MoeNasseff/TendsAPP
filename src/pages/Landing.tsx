@@ -40,8 +40,11 @@ export function Landing() {
           <h1 className="font-display text-display-lg text-white">{brand.appName}</h1>
           <p className="max-w-md text-lg text-white/50">{brand.tagline}</p>
           <div className="flex flex-wrap items-center gap-3">
+            {/* "Get started" is the new-account call to action, so it points at
+                /signup now that one exists; the header's "Sign in" still goes to
+                /login for people who already have an account. */}
             <Link
-              to="/login"
+              to="/signup"
               className="rounded-lg bg-mood-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
             >
               Get started

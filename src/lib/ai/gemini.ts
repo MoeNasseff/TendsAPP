@@ -11,7 +11,7 @@
 // -- NOT models/{model}:generateContent with contents[].parts[] and
 // generationConfig.responseSchema. This API has changed repeatedly; re-read
 // the docs before editing rather than trusting this comment.
-import { supabase } from '../supabase'
+import { callFunction } from '../supabase'
 import type { AIProvider, AIResolution } from './types'
 
 /** Flash tier: fast and free-tier eligible, and vision-capable. The model
@@ -81,35 +81,30 @@ export async function runGemini(
 ): Promise<GeminiResult> {
   if (resolution.status === 'unavailable') return { ok: false, reason: 'unavailable' }
 
-  const { data, error } = await supabase.functions.invoke('ai-proxy', {
-    body: {
-      provider: geminiProvider.id,
-      // 'byok' | 'managed' — the proxy loads the matching key server-side.
-      key_source: resolution.status,
-      model: request.model ?? GEMINI_DEFAULT_MODEL,
-      input: request.input,
-      ...(request.responseFormat ? { response_format: request.responseFormat } : {}),
-    },
+  // callFunction, not supabase.functions.invoke: the latter adds `apikey` and
+  // `x-client-info`, which the proxy's CORS allow-list does not cover, so the
+  // browser blocks the request before it is sent. See callFunction's note.
+  const { response, data } = await callFunction('ai-proxy', {
+    provider: geminiProvider.id,
+    // 'byok' | 'managed' — the proxy loads the matching key server-side.
+    key_source: resolution.status,
+    model: request.model ?? GEMINI_DEFAULT_MODEL,
+    input: request.input,
+    ...(request.responseFormat ? { response_format: request.responseFormat } : {}),
   })
 
-  if (error) return { ok: false, reason: await failureFrom(error) }
+  if (!response) return { ok: false, reason: 'transport_error' }
+  if (!response.ok) return { ok: false, reason: failureFrom(data) }
 
   return { ok: true, interaction: data as GeminiInteraction }
 }
 
-/** Maps a functions.invoke error onto our own vocabulary. The proxy's body
- * is the only thing read — never a raw message, which could carry detail we
- * do not want in the UI. */
-async function failureFrom(error: unknown): Promise<GeminiFailure> {
-  const context = (error as { context?: unknown }).context
-  if (!(context instanceof Response)) return 'transport_error'
-
-  try {
-    const body = (await context.clone().json()) as { error?: unknown }
-    if (body.error === 'unavailable' || body.error === 'byok_not_configured') return body.error
-  } catch {
-    // Non-JSON body — fall through to the generic reason.
-  }
+/** Maps the proxy's error body onto our own vocabulary. Only the structured
+ * `error` field is read — never a raw message, which could carry detail we do
+ * not want in the UI. */
+function failureFrom(data: unknown): GeminiFailure {
+  const code = (data as { error?: unknown } | null)?.error
+  if (code === 'unavailable' || code === 'byok_not_configured') return code
   return 'provider_error'
 }
 

@@ -57,7 +57,7 @@ export function ImageUpload({
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
           aria-label="Upload image"
-          className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 text-slate-500 hover:border-mood-accent hover:text-mood-accent"
+          className="flex h-16 w-16 items-center justify-center rounded-xl border border-gray-300 text-gray-500 hover:border-brand-500 hover:text-brand-500 dark:border-white/15 dark:text-gray-400 dark:hover:border-brand-400 dark:hover:text-brand-400"
         >
           <ImagePlus className="h-5 w-5" />
         </button>

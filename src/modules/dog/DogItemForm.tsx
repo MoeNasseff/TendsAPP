@@ -90,19 +90,19 @@ export function DogItemForm({
         <ImageUpload folder="dog" value={imageUrl} onChange={setImageUrl} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label htmlFor="dogitem-kind" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Kind</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Kind</span>
             <select
               id="dogitem-kind"
               value={kind}
               onChange={(e) => setKind(e.target.value as DogItemKind)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             >
               <option value="vaccine">Vaccine</option>
               <option value="medicine">Medicine</option>
             </select>
           </label>
           <label htmlFor="dogitem-name" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Name</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Name</span>
             <input
               id="dogitem-name"
               type="text"
@@ -110,64 +110,64 @@ export function DogItemForm({
               placeholder="e.g. Rabies vaccine"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
           </label>
         </div>
         <label htmlFor="dogitem-description" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Description</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Description</span>
           <textarea
             id="dogitem-description"
             placeholder="Optional"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="dogitem-dose" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Dose</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Dose</span>
           <input
             id="dogitem-dose"
             type="text"
             placeholder="Optional"
             value={dose}
             onChange={(e) => setDose(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label htmlFor="dogitem-schedule-type" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Schedule type</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Schedule type</span>
             <select
               id="dogitem-schedule-type"
               value={scheduleType}
               onChange={(e) => setScheduleType(e.target.value as ScheduleType)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             >
               <option value="once">Once</option>
               <option value="recurring">Recurring</option>
             </select>
           </label>
           <label htmlFor="dogitem-due-at" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Due</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Due</span>
             <input
               id="dogitem-due-at"
               type="datetime-local"
               value={dueAt}
               onChange={(e) => setDueAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
           </label>
           {scheduleType === 'recurring' && (
             <label htmlFor="dogitem-repeat-days" className="flex flex-col gap-1">
-              <span className="text-micro uppercase text-white/50">Repeat every (days)</span>
+              <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Repeat every (days)</span>
               <input
                 id="dogitem-repeat-days"
                 type="number"
                 value={repeatDays}
                 onChange={(e) => setRepeatDays(e.target.value)}
-                className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+                className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
               />
             </label>
           )}
@@ -176,7 +176,7 @@ export function DogItemForm({
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-mood-accent py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-500 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             {submitting ? 'Saving…' : editing ? 'Update item' : 'Add item'}
           </button>
@@ -184,7 +184,7 @@ export function DogItemForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+              className="rounded-lg border border-gray-300 px-4 text-sm text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
             >
               Cancel
             </button>

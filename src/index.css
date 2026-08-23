@@ -1,14 +1,11 @@
-@import '@fontsource/inter/300.css';
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-/* Display face. Latin subsets only — the full @fontsource/libre-caslon-text
-   entrypoint pulls latin-ext too, which nothing here needs and which costs
-   real bytes on a PWA. */
-@import '@fontsource/libre-caslon-text/latin-400.css';
-@import '@fontsource/libre-caslon-text/latin-700.css';
-@import './styles/moods.css';
+/* Body + display face: Outfit, self-hosted. TailAdmin pulls Outfit from the
+   Google Fonts CDN; that is not viable here because the app is an installable
+   PWA — a CDN font breaks offline and adds a third-party origin. */
+@import '@fontsource/outfit/300.css';
+@import '@fontsource/outfit/400.css';
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/outfit/700.css';
 
 /* Third-party CSS is pushed into the base layer deliberately. Tailwind 3 inlined
    its directives, so the cascade was flat and source order decided: preflight
@@ -22,182 +19,463 @@
 
 @import 'tailwindcss';
 
-/* Tailwind 4 is CSS-first, but pass 1 of this migration keeps the v3 JavaScript
-   config via @config on purpose, so the upgrade can be verified with zero
-   intended visual change. Converting the theme into @theme blocks — and folding
-   in TailAdmin's tokens — is pass 2. See tasks/current-theme-spec.md. */
-@config '../tailwind.config.ts';
-
-/* `darkMode` is the one v3 config key @config does NOT carry over — Tailwind 4
-   requires the dark variant to be declared in CSS. Without this line every
-   `dark:` utility in the app silently compiles to nothing (verified: zero
-   occurrences of [data-theme="dark"] in the built stylesheet), which is exactly
-   the failure the v3 config's darkMode: ['selector', '[data-theme="dark"]']
-   used to configure. `data-theme` is set on <html> by the inline bootstrap
-   script in index.html and by src/lib/theme.ts. */
+/* Tailwind 4 requires the dark variant in CSS; `darkMode` in a JS config is not
+   carried over. `data-theme` is set on <html> by the inline bootstrap script in
+   index.html and by src/lib/theme.ts. Kept as data-theme rather than TailAdmin's
+   `.dark` class so the existing theme store needs no change. */
 @custom-variant dark (&:is([data-theme=dark] *));
 
-/* Channels first, colour derived from them — same reasoning as moods.css:
-   Tailwind needs `rgb(<channels> / <alpha-value>)` for opacity modifiers like
-   `bg-brand-primary/10` to compile at all. Keep these in sync with
-   brand.config.json, which feeds the manifest and theme-color. */
-:root {
-  --brand-primary-rgb: 39 130 118;
-  --brand-secondary-rgb: 17 20 21;
-  --brand-accent-rgb: 224 168 58;
-  --brand-on-primary-rgb: 255 255 255;
+/* ---------------------------------------------------------------------------
+   Design tokens (TailAdmin palette). Pass 2a of the redesign.
 
-  --brand-primary: rgb(var(--brand-primary-rgb));
-  --brand-secondary: rgb(var(--brand-secondary-rgb));
-  --brand-accent: rgb(var(--brand-accent-rgb));
-  --brand-on-primary: rgb(var(--brand-on-primary-rgb));
+   Everything here is LIGHT-mode values; the dark overrides live in the
+   [data-theme=dark] block below. The app still defaults to dark (theme.ts), so
+   in practice the dark block is what renders today — the light values are built
+   now so that flipping the default in 2c is a one-line change rather than a
+   second migration.
 
-  /* Surface ramp. The app previously had exactly one card surface, so nothing
-     could sit visually above or below anything else. These four steps are the
-     elevation model: depth comes from the ramp plus a hairline stroke, never
-     from a shadow. Same channel form as above so `bg-surface-low/60` works. */
-  --surface-lowest-rgb: 12 15 16;
-  --surface-rgb: 17 20 21;
-  --surface-low-rgb: 25 28 29;
-  --surface-bright-rgb: 55 58 59;
+   Tailwind 4 composes opacity modifiers with color-mix(), so `bg-brand-500/10`
+   works against a plain colour. The old `rgb(<channels> / <alpha-value>)` trick
+   the v3 config needed is gone, and with it the requirement to declare every
+   colour twice.
+   --------------------------------------------------------------------------- */
+@theme {
+  --font-sans: Outfit, system-ui, sans-serif;
+  /* Aliases so existing `font-inter` / `font-display` class usages keep
+     compiling. Both now resolve to Outfit: the Libre Caslon serif is dropped as
+     part of adopting TailAdmin's type. Restoring it is a one-line change here —
+     the original stack is recorded in tasks/current-theme-spec.md §1.5. */
+  --font-inter: Outfit, system-ui, sans-serif;
+  --font-display: Outfit, system-ui, sans-serif;
 
-  /* Motion. Fades and slow scale-ups only — no spring overshoot. */
+  /* --- TailAdmin brand ramp --- */
+  --color-brand-25: #f2f7ff;
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #dde9ff;
+  --color-brand-200: #c2d6ff;
+  --color-brand-300: #9cb9ff;
+  --color-brand-400: #7592ff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+  --color-brand-700: #2a31d8;
+  --color-brand-800: #252dae;
+  --color-brand-900: #262e89;
+  --color-brand-950: #161950;
+
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-800: #1d2939;
+  --color-gray-900: #101828;
+  --color-gray-950: #0c111d;
+  --color-gray-dark: #1a2231;
+
+  --color-success-50: #ecfdf3;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-error-50: #fef3f2;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+  --color-warning-50: #fffaeb;
+  --color-warning-500: #f79009;
+  --color-warning-600: #dc6803;
+
+  /* --- Semantic aliases -----------------------------------------------------
+     These keep ~40 existing components compiling untouched while re-pointing
+     them at the TailAdmin ramp. They are plain custom properties, so the
+     [data-theme=dark] block below can override them at runtime. */
+
+  /* The five per-module "moods" are collapsed into the single brand ramp, as
+     agreed. Aliasing rather than deleting means no component edits in this step:
+     `bg-mood-accent`, `border-mood-accent`, `text-mood-accent` and the direct
+     var() consumers (Recharts fill, DataTables) all keep working and simply
+     render brand indigo everywhere. The per-mood palette is preserved in
+     tasks/current-theme-spec.md §1.3 if it is ever restored as a skin. */
+  --color-mood-accent: var(--color-brand-500);
+  --color-mood-accent-2: var(--color-brand-400);
+  --color-mood-surface: var(--color-gray-50);
+  --color-mood-border: var(--color-gray-200);
+
+  --color-brand-primary: var(--color-brand-500);
+  --color-brand-secondary: var(--color-gray-50);
+  --color-brand-accent: var(--color-warning-500);
+  --color-brand-on-primary: #ffffff;
+
+  /* Elevation ramp, remapped onto the gray scale. Ordering is preserved from
+     the old system (lowest = furthest back, bright = most raised) so existing
+     bg-surface-* usages keep their relative depth. */
+  --color-surface-lowest: var(--color-gray-100);
+  --color-surface: var(--color-gray-50);
+  --color-surface-low: #ffffff;
+  --color-surface-bright: #ffffff;
+
+  /* --- Type scale --------------------------------------------------------- */
+  /* App's existing steps, kept so no component breaks. */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 1rem;
+  --text-micro--letter-spacing: 0.1em;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.1rem;
+  --text-label--letter-spacing: 0.06em;
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 1.15;
+  --text-display-sm--letter-spacing: -0.02em;
+  --text-display: 2rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.02em;
+  --text-display-lg: clamp(2.5rem, 6vw, 3.5rem);
+  --text-display-lg--line-height: 1.05;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-stat: 2.25rem;
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.02em;
+
+  /* TailAdmin's steps, for components ported in 2b. */
+  --text-title-2xl: 72px;
+  --text-title-2xl--line-height: 90px;
+  --text-title-xl: 60px;
+  --text-title-xl--line-height: 72px;
+  --text-title-lg: 48px;
+  --text-title-lg--line-height: 60px;
+  --text-title-md: 36px;
+  --text-title-md--line-height: 44px;
+  --text-title-sm: 30px;
+  --text-title-sm--line-height: 38px;
+  --text-theme-xl: 20px;
+  --text-theme-xl--line-height: 30px;
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs: 12px;
+  --text-theme-xs--line-height: 18px;
+
+  --breakpoint-2xsm: 375px;
+  --breakpoint-xsm: 425px;
+  --breakpoint-3xl: 2000px;
+
+  /* TailAdmin's z-index scale. Their components use `z-1` / `-z-1` (and the
+     larger steps for overlays); without these tokens those classes do not
+     compile at all, so layered decoration renders in front of content instead
+     of behind it. */
+  --z-index-1: 1;
+  --z-index-9: 9;
+  --z-index-99: 99;
+  --z-index-999: 999;
+  --z-index-9999: 9999;
+  --z-index-99999: 99999;
+  --z-index-999999: 999999;
+
+  --radius-2xl: 1rem;
+
+  /* TailAdmin's shadow set. The old system used none at all ("depth comes from
+     the ramp plus a hairline stroke, never from a shadow"); on a light ground
+     that rule stops working, which is why these arrive with the light palette. */
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+
+  /* Motion. App infrastructure — TailAdmin has no equivalent. The "fades and
+     slow scale-ups only, no spring overshoot" rule still holds. */
   --dur-fast: 200ms;
   --dur-base: 300ms;
   --dur-slow: 400ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-duration-fast: 200ms;
+  --transition-duration-base: 300ms;
+  --transition-duration-slow: 400ms;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Light theme: overrides only the tokens that actually change. Accent hues
-   (brand-primary, brand-accent, every mood accent in moods.css) stay
-   identical across themes — only grounds/surfaces flip, mirroring the dark
-   ramp's ordering (lowest darkest, bright lightest) instead of inverting it,
-   so elevation still reads the same way. `data-theme` is set on <html> by
-   the inline bootstrap script in index.html and src/lib/theme.ts. */
-:root[data-theme='light'] {
-  --brand-secondary-rgb: 240 242 241;
-  /* NOTE: overriding the channel here does NOT change `var(--brand-secondary)`.
-     BrandProvider.tsx writes --brand-secondary (and --brand-primary/-accent/
-     -on-primary) as INLINE styles on <html>, and an inline style outranks any
-     stylesheet rule, so the derived token stays pinned to brand.config.json's
-     dark hex in both themes. Tailwind utilities are unaffected because they read
-     the channel var; only direct `var(--brand-secondary)` consumers are —
-     `body { background }` and the scrollbar track below. Pre-existing, and
-     unrelated to Tailwind 4. See tasks/current-theme-spec.md §1.14. */
-
-  --surface-lowest-rgb: 227 230 229;
-  --surface-rgb: 240 242 241;
-  --surface-low-rgb: 250 251 250;
-  --surface-bright-rgb: 255 255 255;
+/* Derived, outside @theme so it can be overridden per theme. */
+:root {
+  --mood-accent: var(--color-brand-500);
+  --mood-accent-text: var(--color-brand-600);
 }
 
-/* Body, not `*`. A universal font-family selector wins against every utility
-   class, which would silently defeat `font-display` everywhere it is applied.
-   Setting it here lets the cascade work normally. */
+/* --- Dark theme -----------------------------------------------------------
+   Overrides the same custom properties @theme declared. Still the default mode
+   (theme.ts defaults to 'dark'), so this is what renders today. */
+[data-theme='dark'] {
+  --color-brand-secondary: var(--color-gray-900);
+  --color-mood-surface: var(--color-gray-800);
+  --color-mood-border: #1d2939;
+
+  --color-surface-lowest: #0c0f10;
+  --color-surface: var(--color-gray-900);
+  --color-surface-low: #191c1d;
+  --color-surface-bright: #373a3b;
+
+  --mood-accent: var(--color-brand-400);
+  --mood-accent-text: var(--color-brand-300);
+}
+
+/* TailAdmin's sidebar menu utilities, ported verbatim from their index.css.
+   AppSidebar's markup is written entirely in terms of these; without them the
+   class names compile to nothing and the nav renders unstyled. */
+@utility menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-theme-sm font-medium;
+}
+@utility menu-item-active {
+  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+}
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 group-hover:text-gray-700 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-gray-300;
+}
+@utility menu-item-icon {
+  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400;
+}
+@utility menu-item-icon-active {
+  @apply text-brand-500 dark:text-brand-400;
+}
+@utility menu-item-icon-size {
+  & svg {
+    @apply !size-6;
+  }
+}
+@utility menu-item-icon-inactive {
+  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+}
+@utility menu-item-arrow {
+  @apply relative;
+}
+@utility menu-item-arrow-active {
+  @apply rotate-180 text-brand-500 dark:text-brand-400;
+}
+@utility menu-item-arrow-inactive {
+  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+}
+@utility menu-dropdown-item {
+  @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-theme-sm font-medium;
+}
+@utility menu-dropdown-item-active {
+  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+}
+@utility menu-dropdown-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+}
+@utility menu-dropdown-badge {
+  @apply block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase text-brand-500 dark:text-brand-400;
+}
+@utility menu-dropdown-badge-active {
+  @apply bg-brand-100 dark:bg-brand-500/20;
+}
+@utility menu-dropdown-badge-inactive {
+  @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
+}
+
+/* The grey sibling of the badge above. TailAdmin marks the rows that only
+   exist in the paid template with it — Task, Form Layout and Data Tables. It
+   reads as muted rather than branded so a "pro" pill never competes with a
+   "new" one for attention in the same list. */
+@utility menu-dropdown-badge-pro {
+  @apply block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase text-gray-500 dark:text-gray-400;
+}
+@utility menu-dropdown-badge-pro-active {
+  @apply bg-gray-200 dark:bg-white/10;
+}
+@utility menu-dropdown-badge-pro-inactive {
+  @apply bg-gray-100 group-hover:bg-gray-200 dark:bg-white/5 dark:group-hover:bg-white/10;
+}
+
+/* TailAdmin binds flatpickr to `.datepickerTwo`, which replaces the native date
+   control entirely. Tend has no flatpickr, so the browser paints its own
+   calendar indicator next to the reference's own SVG — two glyphs where the
+   design has one. Hiding the native one restores the intended look without
+   altering the cloned class list, and it stays clickable (opacity, not
+   display), so the field still opens the platform picker. */
+.datepickerTwo::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+/* Their thin scrollbar, used by the sidebar body and the notification list. */
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply size-1.5;
+  }
+  &::-webkit-scrollbar-track {
+    @apply rounded-full;
+  }
+  &::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-gray-200 dark:bg-gray-700;
+  }
+}
+
+/* TailAdmin's no-scrollbar utility, ported verbatim from their index.css.
+   Their SignUpForm column scrolls (the form is taller than the viewport on
+   short screens) and hides its scrollbar with this; without the utility the
+   class is inert and a bar appears down the middle of the split layout. */
+@utility no-scrollbar {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Tailwind 4 changed the default border colour to currentColor and stopped
+   setting cursor:pointer on buttons. Both restored here, as TailAdmin does. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  [data-theme='dark'] *,
+  [data-theme='dark'] ::after,
+  [data-theme='dark'] ::before,
+  [data-theme='dark'] ::backdrop,
+  [data-theme='dark'] ::file-selector-button {
+    border-color: var(--color-gray-800, currentColor);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Body, not `*`. A universal font-family selector wins against every util
+   class, which would silently defeat font utilities everywhere applied. */
 body {
   margin: 0;
-  background: var(--brand-secondary);
-  color-scheme: dark;
-  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100svh;
+  background: var(--color-brand-secondary);
+  color-scheme: light;
+  font-family: Outfit, system-ui, sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-:root[data-theme='light'] body {
-  color-scheme: light;
-}
-
-#root {
-  min-height: 100svh;
+[data-theme='dark'] body {
+  color-scheme: dark;
 }
 
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: var(--brand-secondary);
+  background: var(--color-brand-secondary);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--brand-primary) 30%, transparent);
-  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
+  /* Pill rather than a bare 3px: the thumb is 6px wide, so a full round and a
+     half-width radius render identically, and this stays on the documented
+     radius scale. */
+  border-radius: 999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--brand-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--color-brand-500) 55%, transparent);
 }
 
 /* Translucent chrome: app bars, nav, toasts, dialogs. Keeps `backdrop-filter`,
    which is why Portal exists — see the note in Portal.tsx before removing it
    from anything that hosts a fixed-position child. */
 .glass {
-  background: rgb(var(--surface-rgb) / 0.8);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
   backdrop-filter: blur(24px);
+  border-color: var(--color-gray-200);
+}
+
+[data-theme='dark'] .glass {
   border-color: rgb(255 255 255 / 0.1);
 }
 
-:root[data-theme='light'] .glass {
-  border-color: rgb(0 0 0 / 0.08);
-}
-
-/* Content surfaces: solid, one step up from the page, hairline stroke, no
-   blur and no shadow. Depth reads from the ramp, not from a drop shadow. */
+/* Content surfaces, one step up from the page. */
 .surface-card {
-  background: rgb(var(--surface-low-rgb));
+  background: var(--color-surface-low);
+  border-color: var(--color-gray-200);
+  box-shadow: var(--shadow-theme-xs);
+}
+
+[data-theme='dark'] .surface-card {
   border-color: rgb(255 255 255 / 0.06);
+  box-shadow: none;
 }
 
-:root[data-theme='light'] .surface-card {
-  border-color: rgb(0 0 0 / 0.08);
-}
-
+/* Every input in the app already carries .form-input, so the colours live here
+   rather than on each element. That matters: 42 inputs across 12 files were
+   hardcoded `bg-black/20 text-slate-200 border-white/10` with no dark: prefix —
+   dark-only values that made light mode unreadable. Setting them here fixes all
+   42 at once, and because this rule is UNLAYERED it outranks Tailwind's layered
+   utilities, so the stale literals still in the markup are overridden rather
+   than fought. Those literals should be stripped as each screen is touched. */
 .form-input {
+  background: #ffffff;
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-800);
   transition: all var(--dur-fast) var(--ease-out);
 }
 
-.form-input:focus {
-  border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+.form-input::placeholder {
+  color: var(--color-gray-400);
 }
 
-/* Focus states, everything that isn't a text input (.form-input:focus above
-   already themes those). Previously nothing here — buttons and links fell
-   back to the browser's unstyled default outline, invisible or generic
-   depending on the browser. This covers native <button>/<a> plus anything
-   rendered by DataTables, since it's a plain type selector. */
+[data-theme='dark'] .form-input {
+  background: rgb(255 255 255 / 0.03);
+  border-color: rgb(255 255 255 / 0.1);
+  color: var(--color-gray-100);
+}
+
+[data-theme='dark'] .form-input::placeholder {
+  color: var(--color-gray-500);
+}
+
+.form-input:focus {
+  border-color: var(--color-brand-500);
+  box-shadow: var(--shadow-focus-ring, 0px 0px 0px 4px rgba(70, 95, 255, 0.12));
+}
+
+/* Focus states for everything that isn't a text input. Plain type selectors so
+   DataTables-rendered controls are covered too. */
 button:focus-visible,
 a:focus-visible,
 [role='button']:focus-visible {
   outline: none;
   box-shadow:
-    0 0 0 2px rgb(var(--surface-rgb)),
-    0 0 0 4px var(--mood-accent);
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-brand-500);
 }
 
 /* Expands the click/tap hit area to the 44px WCAG/Apple HIG floor without
    growing the visible control. The ::before is part of the host element's
-   hit-test area, so a click anywhere inside it fires the host's own
-   onClick — no separate event wiring needed. Used on icon-only buttons that
-   would otherwise sit well under 44px. */
+   hit-test area, so a click anywhere inside it fires the host's own onClick. */
 .tap-target {
   position: relative;
 }
+
 .tap-target::before {
   content: '';
   position: absolute;
   inset: -8px;
 }
 
-/* Text-safe accent — see the --mood-accent-text comment in moods.css. Use
-   for small/persistent accent-colored text (eyebrows, active nav labels);
-   keep plain text-mood-accent for icon fills and hover-only states. */
+/* Accent text that stays legible at small sizes. */
 .text-mood-accent-safe {
   color: var(--mood-accent-text);
 }
 
 @keyframes toast-in {
   from {
+    opacity: 0;
     transform: translateX(120%);
   }
   to {
+    opacity: 1;
     transform: translateX(0);
   }
 }
@@ -217,28 +495,25 @@ a:focus-visible,
 }
 
 /* DataTables theming. The shipped stylesheet exposes most of its palette as
-   --dt-* custom properties (see :root / :root.dark in
-   datatables.net-dt/css/dataTables.dataTables.css) — redefining them here
-   re-themes the whole widget without fighting individual selectors. Scoped to
-   .dt-theme rather than adding a global `.dark` class to <html>, since this
-   app has no other use for one and DataTables' dark palette doesn't exactly
-   match the surface ramp anyway. buttons.dataTables.css is not var-based, so
-   .dt-button gets direct overrides below. */
+   --dt-* custom properties, so redefining them re-themes the whole widget
+   without fighting individual selectors. Scoped to .dt-theme rather than a
+   global class. buttons.dataTables.css is not var-based, so .dt-button gets
+   direct overrides below. Restyled for the light ground in 2b. */
 .dt-theme {
   --dt-html_background: transparent;
   --dt-row_background: transparent;
-  --dt-row_background-hover: 255 255 255;
+  --dt-row_background-hover: 0 0 0;
   --dt-row_alpha-hover: 0.03;
-  --dt-row_background-stripe: 255 255 255;
+  --dt-row_background-stripe: 0 0 0;
   --dt-row_alpha-stripe: 0.015;
-  --dt-header_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-header_border: 1px solid var(--color-gray-200);
   --dt-header_padding: 10px 12px;
-  --dt-footer_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-footer_border: 1px solid var(--color-gray-200);
   --dt-footer_padding: 10px 12px;
-  --dt-body_border: 1px solid rgb(255 255 255 / 0.05);
+  --dt-body_border: 1px solid var(--color-gray-100);
   --dt-body_padding: 10px 12px;
-  --dt-control_color: rgb(255 255 255 / 0.75);
-  --dt-order-arrow_color: rgb(255 255 255 / 0.3);
+  --dt-control_color: var(--color-gray-700);
+  --dt-order-arrow_color: var(--color-gray-400);
   --dt-order-arrow_color-current: var(--mood-accent);
   --dt-paging-button_padding: 0.4em 0.85em;
   --dt-paging-button_border-radius: 0.5rem;
@@ -247,10 +522,10 @@ a:focus-visible,
   --dt-paging-button_box-shadow-active: none;
   --dt-paging-button_background: transparent;
   --dt-paging-button_border: 1px solid transparent;
-  --dt-paging-button_color: rgb(255 255 255 / 0.5);
-  --dt-paging-button_background-hover: rgb(255 255 255 / 0.06);
+  --dt-paging-button_color: var(--color-gray-500);
+  --dt-paging-button_background-hover: var(--color-gray-100);
   --dt-paging-button_border-hover: 1px solid transparent;
-  --dt-paging-button_color-hover: rgb(255 255 255 / 0.85);
+  --dt-paging-button_color-hover: var(--color-gray-800);
   --dt-paging-button_background-current: var(--mood-accent);
   --dt-paging-button_border-current: 1px solid transparent;
   --dt-paging-button_color-current: white;
@@ -259,18 +534,42 @@ a:focus-visible,
   --dt-paging-button_color-current-hover: white;
   --dt-paging-button_background-disabled: transparent;
   --dt-paging-button_border-disabled: 1px solid transparent;
-  --dt-paging-button_color-disabled: rgb(255 255 255 / 0.2);
-  --dt-input_border: 1px solid rgb(255 255 255 / 0.1);
+  --dt-paging-button_color-disabled: var(--color-gray-300);
+  --dt-input_border: 1px solid var(--color-gray-300);
   --dt-input_border-radius: 0.5rem;
   --dt-input_padding: 0.4em 0.75em;
+  --dt-input_background: #ffffff;
+  --dt-input_color: var(--color-gray-800);
+}
+
+[data-theme='dark'] .dt-theme {
+  --dt-row_background-hover: 255 255 255;
+  --dt-row_background-stripe: 255 255 255;
+  --dt-header_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-footer_border: 1px solid rgb(255 255 255 / 0.08);
+  --dt-body_border: 1px solid rgb(255 255 255 / 0.05);
+  --dt-control_color: rgb(255 255 255 / 0.75);
+  --dt-order-arrow_color: rgb(255 255 255 / 0.3);
+  --dt-paging-button_color: rgb(255 255 255 / 0.5);
+  --dt-paging-button_background-hover: rgb(255 255 255 / 0.06);
+  --dt-paging-button_color-hover: rgb(255 255 255 / 0.85);
+  --dt-paging-button_color-disabled: rgb(255 255 255 / 0.2);
+  --dt-input_border: 1px solid rgb(255 255 255 / 0.1);
   --dt-input_background: rgb(0 0 0 / 0.2);
   --dt-input_color: rgb(255 255 255 / 0.85);
 }
 
 .dt-theme table.dataTable {
   width: 100% !important;
+  color: var(--color-gray-700);
+  /* Body step (0.875rem). Was a one-off 0.8125rem/13px — a density tweak that
+     sat between the theme-xs and body steps and existed nowhere else in the
+     system. DESIGN.md's body role explicitly covers table cells. */
+  font-size: 0.875rem;
+}
+
+[data-theme='dark'] .dt-theme table.dataTable {
   color: rgb(255 255 255 / 0.75);
-  font-size: 0.8125rem;
 }
 
 .dt-theme table.dataTable thead th {
@@ -278,6 +577,10 @@ a:focus-visible,
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  color: var(--color-gray-500);
+}
+
+[data-theme='dark'] .dt-theme table.dataTable thead th {
   color: rgb(255 255 255 / 0.5);
 }
 
@@ -286,9 +589,8 @@ a:focus-visible,
 }
 
 /* Paging buttons and the search input default to well under 44px tall
-   (--dt-paging-button_padding above is em-relative to a 13px font, so it
-   doesn't reliably clear the floor). Fixed min-height is more reliable than
-   chasing the right em value. */
+   (--dt-paging-button_padding is em-relative to a 13px font, so it doesn't
+   reliably clear the floor). Fixed min-height is more reliable. */
 .dt-theme div.dt-paging .dt-paging-button {
   min-height: 44px;
   display: inline-flex;
@@ -298,7 +600,6 @@ a:focus-visible,
 
 .dt-theme div.dt-search input,
 .dt-theme div.dt-input {
-  outline: none;
   min-height: 44px;
   transition: border-color var(--dur-fast) var(--ease-out);
 }
@@ -309,15 +610,19 @@ a:focus-visible,
 }
 
 .dt-theme div.dt-info {
-  color: rgb(255 255 255 / 0.5);
+  color: var(--color-gray-500);
   font-size: 0.75rem;
 }
 
+[data-theme='dark'] .dt-theme div.dt-info {
+  color: rgb(255 255 255 / 0.5);
+}
+
 .dt-theme .dt-button {
-  background: rgb(var(--surface-bright-rgb));
-  border: 1px solid rgb(255 255 255 / 0.1);
+  background: var(--color-surface-bright);
+  border: 1px solid var(--color-gray-300);
   border-radius: 0.5rem;
-  color: rgb(255 255 255 / 0.75);
+  color: var(--color-gray-700);
   padding: 0.4em 0.9em;
   min-height: 44px;
   display: inline-flex;
@@ -325,11 +630,18 @@ a:focus-visible,
   font-size: 0.75rem;
   font-weight: 500;
   box-shadow: none !important;
-  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+[data-theme='dark'] .dt-theme .dt-button {
+  border-color: rgb(255 255 255 / 0.1);
+  color: rgb(255 255 255 / 0.75);
 }
 
 .dt-theme .dt-button:hover:not(.disabled) {
-  background: rgb(var(--surface-bright-rgb));
+  background: var(--color-surface-bright);
   border-color: var(--mood-accent);
   color: var(--mood-accent);
 }

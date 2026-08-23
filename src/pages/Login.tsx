@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
-import { useBrand } from '../hooks/useBrand'
-import { Card } from '../components/Card'
+import { AuthLayout } from '../components/AuthLayout'
+import { AuthOrDivider, AuthSocialButtons } from '../components/AuthSocialButtons'
+import { authField, authLabel } from '../components/auth-fields'
 
 type Mode = 'password' | 'magic-link'
 
+/**
+ * Port of TailAdmin's SignInForm (components/auth/SignInForm.tsx), inside their
+ * AuthPageLayout. The shell and the brand panel now live in <AuthLayout>, which
+ * /signup consumes too — this file is only the form column, exactly as
+ * SignInForm is on their side.
+ *
+ * Auth logic is unchanged: password sign-in, magic link, OAuth and password
+ * reset, all against Supabase. Account creation has moved to /signup.
+ */
 export function Login() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const showToast = useToast()
-  const brand = useBrand()
 
   const [mode, setMode] = useState<Mode>('password')
-  const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
 
@@ -33,28 +43,17 @@ export function Login() {
     }
 
     setSubmitting(true)
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          // Without this, Supabase builds the confirmation link from the
-          // project's Site URL, which sends every device to localhost. Using
-          // the live origin keeps the link on whichever host signed up.
-          options: { emailRedirectTo: `${window.location.origin}/` },
-        })
-      : await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
     setSubmitting(false)
 
     if (error) {
       showToast(error.message, 'error')
       return
     }
-
-    if (isSignUp) {
-      showToast('Account created — check your email to confirm.', 'success')
-    } else {
-      showToast('Signed in successfully!', 'success')
-    }
+    showToast('Signed in successfully!', 'success')
   }
 
   async function handleMagicLinkSubmit(e: React.FormEvent) {
@@ -80,107 +79,188 @@ export function Login() {
     showToast('Magic link sent — check your email.', 'success')
   }
 
+  async function handleForgotPassword() {
+    if (!email.trim()) {
+      showToast('Enter your email first, then tap Forgot password.', 'error')
+      return
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/`,
+    })
+    showToast(
+      error ? error.message : 'Password reset link sent — check your email.',
+      error ? 'error' : 'success',
+    )
+  }
+
   return (
-    <main className="flex min-h-svh items-center justify-center bg-brand-secondary px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <img src={brand.logo.src} alt={brand.logo.alt} className="h-10 w-auto" />
-          <h1 className="font-display text-display-sm text-white">{brand.appName}</h1>
-          <p className="text-sm text-white/50">{brand.tagline}</p>
+    <AuthLayout>
+      <div className="flex flex-1 flex-col">
+        {/* Back link parked 2026-08-19 — uncomment to restore, and re-add
+            ChevronLeft to the lucide import. TailAdmin has one here reading
+            "Back to dashboard"; ours said "Back to home" because `/` is the
+            landing page for a signed-out visitor, not a dashboard. Note its
+            `pt-10` also served as this column's top spacer, so with the block
+            gone the form sits slightly higher than TailAdmin's. */}
+        {/*
+        <div className="mx-auto w-full max-w-md pt-10">
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          >
+            <ChevronLeft className="size-5" />
+            Back to home
+          </Link>
         </div>
+        */}
 
-        <Card>
-          <div className="mb-4 flex rounded-xl border border-white/5 bg-black/20 p-1 text-sm">
-            <button
-              type="button"
-              onClick={() => setMode('password')}
-              className={`flex-1 rounded-lg py-1.5 font-medium transition-colors ${
-                mode === 'password' ? 'bg-brand-primary text-brand-on-primary' : 'text-slate-400'
-              }`}
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('magic-link')}
-              className={`flex-1 rounded-lg py-1.5 font-medium transition-colors ${
-                mode === 'magic-link' ? 'bg-brand-primary text-brand-on-primary' : 'text-slate-400'
-              }`}
-            >
-              Magic Link
-            </button>
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+          <div>
+            <div className="mb-5 sm:mb-8">
+              <h1 className="mb-2 text-title-sm font-semibold text-gray-800 dark:text-white/90 sm:text-title-md">
+                Sign In
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Enter your email and password to sign in!
+              </p>
+            </div>
+
+            <div>
+              <AuthSocialButtons verb="Sign in" />
+              <AuthOrDivider />
+
+              {mode === 'password' ? (
+                <form onSubmit={handlePasswordSubmit}>
+                  <div className="space-y-6">
+                    <div>
+                      <label className={authLabel} htmlFor="login-email">
+                        Email <span className="text-error-500">*</span>
+                      </label>
+                      <input
+                        id="login-email"
+                        type="email"
+                        required
+                        placeholder="info@gmail.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={authField}
+                      />
+                    </div>
+                    <div>
+                      <label className={authLabel} htmlFor="login-password">
+                        Password <span className="text-error-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="login-password"
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className={authField}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-4 top-1/2 z-30 -translate-y-1/2 cursor-pointer text-gray-500 dark:text-gray-400"
+                        >
+                          {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    {/* Their layout has "Keep me logged in" on the left of this
+                        row; Supabase persists sessions on its own, so that would
+                        be decorative. The magic-link switch takes the space
+                        instead — it is a real second sign-in method and needs a
+                        home now that the grid above holds the OAuth providers. */}
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setMode('magic-link')}
+                        className="text-theme-sm font-normal text-gray-700 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                      >
+                        Email me a magic link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition-colors hover:bg-brand-600 disabled:bg-brand-300"
+                      >
+                        {submitting ? 'Please wait…' : 'Sign in'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              ) : magicLinkSent ? (
+                <p className="py-4 text-center text-sm text-gray-700 dark:text-gray-400">
+                  Check <span className="text-brand-500 dark:text-brand-400">{email}</span> for your
+                  sign-in link.
+                </p>
+              ) : (
+                <form onSubmit={handleMagicLinkSubmit}>
+                  <div className="space-y-6">
+                    <div>
+                      <label className={authLabel} htmlFor="login-magic-email">
+                        Email <span className="text-error-500">*</span>
+                      </label>
+                      <input
+                        id="login-magic-email"
+                        type="email"
+                        required
+                        placeholder="info@gmail.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={authField}
+                      />
+                    </div>
+                    <div className="flex items-center justify-start">
+                      <button
+                        type="button"
+                        onClick={() => setMode('password')}
+                        className="text-theme-sm font-normal text-gray-700 hover:text-brand-500 dark:text-gray-400 dark:hover:text-brand-400"
+                      >
+                        Use a password instead
+                      </button>
+                    </div>
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition-colors hover:bg-brand-600 disabled:bg-brand-300"
+                      >
+                        {submitting ? 'Sending…' : 'Send magic link'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              <div className="mt-5">
+                <p className="text-center text-sm font-normal text-gray-700 dark:text-gray-400 sm:text-start">
+                  Don&apos;t have an account?{' '}
+                  <Link
+                    to="/signup"
+                    className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  >
+                    Sign Up
+                  </Link>
+                </p>
+              </div>
+            </div>
           </div>
-
-          {mode === 'password' ? (
-            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
-              <label htmlFor="login-email" className="flex flex-col gap-1">
-                <span className="text-micro uppercase text-white/50">Email</span>
-                <input
-                  id="login-email"
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
-                />
-              </label>
-              <label htmlFor="login-password" className="flex flex-col gap-1">
-                <span className="text-micro uppercase text-white/50">Password</span>
-                <input
-                  id="login-password"
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="mt-1 rounded-lg bg-brand-primary py-2 text-sm font-semibold text-brand-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {submitting ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsSignUp((v) => !v)}
-                className="text-xs text-slate-400 hover:text-brand-primary"
-              >
-                {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-              </button>
-            </form>
-          ) : magicLinkSent ? (
-            <p className="py-4 text-center text-sm text-slate-300">
-              Check <span className="text-brand-primary">{email}</span> for your sign-in link.
-            </p>
-          ) : (
-            <form onSubmit={handleMagicLinkSubmit} className="flex flex-col gap-4">
-              <label htmlFor="login-magic-email" className="flex flex-col gap-1">
-                <span className="text-micro uppercase text-white/50">Email</span>
-                <input
-                  id="login-magic-email"
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="mt-1 rounded-lg bg-brand-primary py-2 text-sm font-semibold text-brand-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {submitting ? 'Sending…' : 'Send magic link'}
-              </button>
-            </form>
-          )}
-        </Card>
+        </div>
       </div>
-    </main>
+    </AuthLayout>
   )
 }

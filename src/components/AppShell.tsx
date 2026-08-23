@@ -3,28 +3,53 @@ import { useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
+import { Backdrop } from './Backdrop'
 import { BottomNav } from './BottomNav'
 import { DueReminderHost } from './DueReminderHost'
 import { InstallPrompt } from './InstallPrompt'
 import { fadeUp } from '../lib/motion'
 import { useSidebar } from '../hooks/useSidebar'
 
+/**
+ * Port of TailAdmin's AppLayout (layout/AppLayout.tsx): sidebar + backdrop in
+ * one column, header + content in the other, with the content column's left
+ * margin tracking the sidebar's width.
+ *
+ * The margin values are hardcoded against Sidebar's own w-[290px]/w-[90px], so
+ * the two must always change together — which is why both read the same store
+ * rather than each keeping their own idea of the width.
+ *
+ * Tend keeps three things TailAdmin has no equivalent for: BottomNav (the
+ * mobile tab bar), DueReminderHost and InstallPrompt.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const reduce = useReducedMotion()
-  const { collapsed } = useSidebar()
+  const { isExpanded, isHovered, isMobileOpen } = useSidebar()
 
   return (
-    <div className="min-h-svh bg-brand-secondary text-slate-200">
-      <Sidebar />
-      {/* sm:pl-* is hardcoded against Sidebar's own width — the two must
-          always move together, so both read off the same store. */}
-      <div className={`transition-[padding-left] duration-base ease-out-expo ${collapsed ? 'sm:pl-16' : 'sm:pl-56'}`}>
+    <div className="min-h-svh bg-brand-secondary text-gray-700 xl:flex dark:text-gray-300">
+      <div>
+        <Sidebar />
+        <Backdrop />
+      </div>
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          isExpanded || isHovered ? 'xl:ml-[290px]' : 'xl:ml-[90px]'
+        } ${isMobileOpen ? 'ml-0' : ''}`}
+      >
         <Header />
-        {/* Generous vertical rhythm is load-bearing for this design — the
-            sections need room to breathe or the density reads as a dashboard
-            dump again. Bottom padding clears the mobile nav and its inset. */}
-        <main className="mx-auto max-w-5xl px-4 pt-10 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-12 sm:pb-16">
+        {/* Matches the reference's content wrapper — `p-4 pb-20 md:p-6 md:pb-6`
+            — in every direction but one, so cloned pages sit on the spacing
+            they were designed against rather than a rhythm inherited from
+            Tend's pre-redesign look.
+            The exception is the bottom edge below `sm`, where BottomNav is a
+            71px fixed bar TailAdmin has no equivalent for. Their `pb-20` (80px)
+            would leave 9px of clearance and none at all once a notched device
+            adds its inset, so that one value stays safe-area aware. From `sm`
+            up BottomNav is hidden (`sm:hidden`) and the reference's own values
+            take over exactly. */}
+        <main className="mx-auto max-w-(--breakpoint-2xl) p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-4 md:p-6 md:pb-6">
           {reduce ? (
             children
           ) : (

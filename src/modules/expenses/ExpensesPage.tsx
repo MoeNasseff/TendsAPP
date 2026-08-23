@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Wallet, TrendingUp, Calendar, Receipt, Plus, ScanLine } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { StatCard } from '../../components/StatCard'
 import { Card } from '../../components/Card'
 import { PageHeader } from '../../components/PageHeader'
+import { PrivacyToggle } from '../../components/PrivacyToggle'
 import { StatGrid } from '../../components/StatGrid'
 import { Section } from '../../components/Section'
-import { Modal } from '../../components/Modal'
+// import { Modal } from '../../components/Modal' // hashed out with the add/edit flow
 import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -14,7 +16,7 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { CHART_SERIES, tooltipProps, axisProps } from '../../lib/chartTheme'
 import { useExpenses } from './useExpenses'
-import { ExpenseForm } from './ExpenseForm'
+// import { ExpenseForm } from './ExpenseForm' // hashed out with the add/edit flow
 import { ScanModal } from '../scanner/ScanModal'
 import type { Expense } from '../../lib/types'
 
@@ -33,11 +35,18 @@ function isSameMonth(iso: string, ref: Date) {
 }
 
 export function ExpensesPage() {
-  const { categories, expenses, loading, addExpense, updateExpense, deleteExpense, addCategory } = useExpenses()
-  const [editing, setEditing] = useState<Expense | null>(null)
+  // addExpense/updateExpense/addCategory come back with the hashed-out modal.
+  const { categories, expenses, loading, deleteExpense } = useExpenses()
+  const navigate = useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
+  // ── Add/Edit expense modal: hashed out, kept for later ──────────────────
+  // The + button now goes to /invoices instead of opening this. Restoring it
+  // means uncommenting, in this file: these two state hooks, handleSubmit,
+  // the <Modal> block near the bottom, DataGrid's onEdit prop, the Modal and
+  // ExpenseForm imports, and addExpense/updateExpense in the destructure above.
+  // const [editing, setEditing] = useState<Expense | null>(null)
+  // const [formOpen, setFormOpen] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
@@ -132,15 +141,16 @@ export function ExpensesPage() {
 
   const expenseById = useMemo(() => new Map(expenses.map((e) => [e.id, e])), [expenses])
 
-  async function handleSubmit(input: Parameters<typeof addExpense>[0]) {
-    if (editing) {
-      await updateExpense(editing.id, input)
-      setEditing(null)
-    } else {
-      await addExpense(input)
-    }
-    setFormOpen(false)
-  }
+  // Part of the hashed-out add/edit modal above.
+  // async function handleSubmit(input: Parameters<typeof addExpense>[0]) {
+  //   if (editing) {
+  //     await updateExpense(editing.id, input)
+  //     setEditing(null)
+  //   } else {
+  //     await addExpense(input)
+  //   }
+  //   setFormOpen(false)
+  // }
 
   if (loading) return <PageSkeleton />
 
@@ -149,6 +159,7 @@ export function ExpensesPage() {
       <PageHeader
         eyebrow="MONTHLY OUTFLOW"
         title="Expenses"
+        titleAdornment={<PrivacyToggle />}
         action={
           <div className="flex items-center gap-2">
             <button
@@ -159,14 +170,13 @@ export function ExpensesPage() {
               <ScanLine className="h-4 w-4" />
               Scan
             </button>
+            {/* Was: open the add-expense modal. Now routes to the invoices
+                page, where Scan and Create an Invoice both live. */}
             <button
               type="button"
-              onClick={() => {
-                setEditing(null)
-                setFormOpen(true)
-              }}
-              aria-label="Add expense"
-              className="rounded-lg bg-mood-accent p-2 text-white transition-opacity duration-fast ease-out-expo hover:opacity-90"
+              onClick={() => navigate('/invoices')}
+              aria-label="Go to invoices"
+              className="rounded-lg bg-brand-500 p-2 text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -193,7 +203,7 @@ export function ExpensesPage() {
                     <Cell key={entry.name} fill={entry.color || CHART_SERIES[i % CHART_SERIES.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps} />
+                <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps()} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -204,15 +214,16 @@ export function ExpensesPage() {
         <Card>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={last30DaysData}>
-              <XAxis dataKey="date" {...axisProps} interval={4} />
-              <YAxis {...axisProps} width={40} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps} />
+              <XAxis dataKey="date" {...axisProps()} interval={4} />
+              <YAxis {...axisProps()} width={40} />
+              <Tooltip formatter={(v) => formatCurrency(Number(v))} {...tooltipProps()} />
               <Bar dataKey="total" fill="var(--mood-accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
       </Section>
 
+      {/* ── Hashed out with the add/edit flow. Restore together. ──────────
       <Modal
         open={formOpen}
         onClose={() => {
@@ -232,6 +243,7 @@ export function ExpensesPage() {
           onAddCategory={addCategory}
         />
       </Modal>
+      ────────────────────────────────────────────────────────────────── */}
 
       <Section title="Transactions">
         <Card>
@@ -240,7 +252,7 @@ export function ExpensesPage() {
             value={filterCategory}
             aria-label="Filter by category"
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-2 py-1.5 text-xs outline-hidden"
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -254,7 +266,7 @@ export function ExpensesPage() {
             value={filterFrom}
             onChange={(e) => setFilterFrom(e.target.value)}
             aria-label="Filter from date"
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-2 py-1.5 text-xs outline-hidden"
           />
           <span className="text-xs text-slate-500">to</span>
           <input
@@ -262,7 +274,7 @@ export function ExpensesPage() {
             value={filterTo}
             onChange={(e) => setFilterTo(e.target.value)}
             aria-label="Filter to date"
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-2 py-1.5 text-xs outline-hidden"
           />
         </div>
 
@@ -272,13 +284,15 @@ export function ExpensesPage() {
           <DataGrid
             columns={tableColumns}
             data={tableRows}
-            onEdit={(row) => {
-              const expense = expenseById.get(row.id)
-              if (expense) {
-                setEditing(expense)
-                setFormOpen(true)
-              }
-            }}
+            // Hashed out with the modal — DataGrid only renders the edit
+            // pencil when onEdit is passed, so nothing dead is left behind.
+            // onEdit={(row) => {
+            //   const expense = expenseById.get(row.id)
+            //   if (expense) {
+            //     setEditing(expense)
+            //     setFormOpen(true)
+            //   }
+            // }}
             onDelete={(row) => {
               const expense = expenseById.get(row.id)
               if (expense) setDeleteTarget(expense)

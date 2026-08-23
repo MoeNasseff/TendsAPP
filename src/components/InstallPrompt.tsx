@@ -18,11 +18,11 @@ export function InstallPrompt() {
   return (
     <div className="glass fixed inset-x-4 bottom-20 z-[80] flex items-center gap-3 rounded-xl border p-3 shadow-xl sm:inset-x-auto sm:bottom-4 sm:left-60 sm:max-w-sm">
       <Download className="h-5 w-5 shrink-0 text-mood-accent" />
-      <p className="flex-1 text-sm text-slate-300">Install this app for quick access and push reminders.</p>
+      <p className="flex-1 text-sm text-gray-600 dark:text-gray-300">Install this app for quick access and push reminders.</p>
       <button
         type="button"
         onClick={() => promptInstall().then(() => setDismissed(true))}
-        className="shrink-0 rounded-lg bg-mood-accent px-3 py-1.5 text-xs font-medium text-white"
+        className="shrink-0 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
       >
         Install
       </button>
@@ -30,7 +30,7 @@ export function InstallPrompt() {
         type="button"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss install prompt"
-        className="shrink-0 text-slate-500 hover:text-slate-300"
+        className="shrink-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <X className="h-4 w-4" />
       </button>

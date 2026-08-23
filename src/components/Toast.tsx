@@ -1,10 +1,13 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { ToastContext, type ToastItem, type ToastType } from '../hooks/useToast'
 
+// Status colours signal state; the brand accent is reserved for actions and is
+// used only by the neutral 'info' variant. See the One Accent Rule in DESIGN.md.
 const STYLES: Record<ToastType, string> = {
-  success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-  error: 'border-red-500/30 bg-red-500/10 text-red-300',
-  info: 'border-brand-primary/30 bg-brand-primary/10 text-brand-primary',
+  success:
+    'border-success-500/30 bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-500',
+  error: 'border-error-500/30 bg-error-50 text-error-600 dark:bg-error-500/10 dark:text-error-500',
+  info: 'border-brand-500/30 bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
 }
 
 const ICONS: Record<ToastType, string> = { success: '✓', error: '✕', info: 'ℹ' }

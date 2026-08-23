@@ -60,17 +60,17 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
               animate={{ opacity: 1, scale: 1 }}
               exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
               transition={{ duration: DUR.base, ease: EASE }}
-              className="glass w-full max-w-sm rounded-2xl border p-6"
+              className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-white/10 dark:bg-gray-900 dark:shadow-none"
               onClick={(e) => e.stopPropagation()}
             >
           <h3 className="mb-4 text-base font-semibold text-slate-100">Notifications</h3>
 
           <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between rounded-xl border border-white/10 p-4">
+            <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4 dark:border-white/10">
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-mood-accent" />
                 <div>
-                  <p className="text-sm font-medium text-slate-200">Push notifications</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Push notifications</p>
                   <p className="text-xs text-slate-500">{pushEnabled ? 'Enabled' : 'Not enabled'}</p>
                 </div>
               </div>
@@ -81,18 +81,18 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
                   type="button"
                   onClick={handleEnablePush}
                   disabled={subscribing}
-                  className="rounded-lg bg-mood-accent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                  className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
                 >
                   {subscribing ? 'Enabling…' : 'Enable'}
                 </button>
               )}
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border border-white/10 p-4">
+            <div className="flex items-center justify-between rounded-xl border border-gray-200 p-4 dark:border-white/10">
               <div className="flex items-center gap-3">
                 <Send className="h-5 w-5 text-mood-accent" />
                 <div>
-                  <p className="text-sm font-medium text-slate-200">Telegram</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Telegram</p>
                   <p className="text-xs text-slate-500">{telegramChatId ? 'Connected' : 'Not connected'}</p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
                   href={connectUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg bg-mood-accent px-3 py-1.5 text-xs font-medium text-white"
+                  className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
                 >
                   Connect
                 </a>
@@ -120,7 +120,7 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
           <button
             type="button"
             onClick={onClose}
-            className="mt-4 w-full rounded-lg border border-white/10 py-2 text-sm text-slate-400 hover:bg-white/5"
+            className="mt-4 w-full rounded-lg border border-gray-300 py-2 text-sm text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
           >
             Close
           </button>

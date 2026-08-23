@@ -88,7 +88,7 @@ export function ReminderPicker({
               animate={{ opacity: 1, scale: 1 }}
               exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
               transition={{ duration: DUR.base, ease: EASE }}
-              className="glass w-full max-w-sm rounded-2xl border p-6"
+              className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-white/10 dark:bg-gray-900 dark:shadow-none"
               onClick={(e) => e.stopPropagation()}
             >
           <h3 className="mb-4 text-base font-semibold text-slate-100">Set reminder — {defaultTitle}</h3>
@@ -98,7 +98,7 @@ export function ReminderPicker({
               required
               value={fireAt}
               onChange={(e) => setFireAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
             />
             <div>
               <p className="mb-1.5 text-xs text-slate-500">Channels</p>
@@ -109,7 +109,9 @@ export function ReminderPicker({
                     type="button"
                     onClick={() => toggleChannel(c)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                      channels.includes(c) ? 'bg-mood-accent text-white' : 'border border-white/10 text-slate-400'
+                      channels.includes(c)
+                  ? 'bg-brand-500 text-white'
+                  : 'border border-gray-300 text-gray-600 dark:border-white/10 dark:text-gray-400'
                     }`}
                   >
                     {c}
@@ -118,13 +120,13 @@ export function ReminderPicker({
               </div>
             </div>
             <div className="mt-2 flex justify-end gap-2">
-              <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:bg-white/5">
+              <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-mood-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
               >
                 {submitting ? 'Saving…' : 'Set reminder'}
               </button>

@@ -88,12 +88,12 @@ export function ServiceForm({
   return (
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label htmlFor="service-part" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Part</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Part</span>
           <select
             id="service-part"
             value={part}
             onChange={(e) => setPart(e.target.value as CarServicePart)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           >
             {PARTS.map((p) => (
               <option key={p} value={p}>
@@ -103,7 +103,7 @@ export function ServiceForm({
           </select>
         </label>
         <label htmlFor="service-label" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Label</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Label</span>
           <input
             id="service-label"
             type="text"
@@ -111,65 +111,65 @@ export function ServiceForm({
             placeholder="e.g. Oil change"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="service-last-km" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Last service (km)</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Last service (km)</span>
           <input
             id="service-last-km"
             type="number"
             value={lastServiceKm}
             onChange={(e) => setLastServiceKm(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="service-last-date" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Last service date</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Last service date</span>
           <input
             id="service-last-date"
             type="date"
             value={lastServiceDate}
             onChange={(e) => setLastServiceDate(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="service-interval-km" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Interval (km)</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Interval (km)</span>
           <input
             id="service-interval-km"
             type="number"
             value={intervalKm}
             onChange={(e) => setIntervalKm(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="service-interval-days" className="flex flex-col gap-1">
-          <span className="text-micro uppercase text-white/50">Interval (days)</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Interval (days)</span>
           <input
             id="service-interval-days"
             type="number"
             value={intervalDays}
             onChange={(e) => setIntervalDays(e.target.value)}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <label htmlFor="service-note" className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-micro uppercase text-white/50">Note</span>
+          <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Note</span>
           <textarea
             id="service-note"
             placeholder="Optional"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
-            className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
+            className="form-input rounded-lg border px-3 py-2 text-sm outline-hidden"
           />
         </label>
         <div className="flex gap-2 sm:col-span-2">
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 rounded-lg bg-mood-accent py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-brand-500 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             {submitting ? 'Saving…' : editing ? 'Update service' : 'Add service'}
           </button>
@@ -177,7 +177,7 @@ export function ServiceForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg border border-white/10 px-4 text-sm text-slate-400 hover:bg-white/5"
+              className="rounded-lg border border-gray-300 px-4 text-sm text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
             >
               Cancel
             </button>

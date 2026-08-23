@@ -67,8 +67,8 @@ export function MeasurementHistory({ history, sex, unit }: Props) {
               }
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 active
-                  ? 'bg-mood-accent text-white'
-                  : 'border border-white/10 text-slate-400 hover:text-slate-200'
+                  ? 'bg-brand-500 text-white'
+                  : 'border border-gray-300 text-gray-600 hover:text-gray-900 dark:border-white/10 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
             >
               {site.label}
@@ -92,15 +92,15 @@ export function MeasurementHistory({ history, sex, unit }: Props) {
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="date" {...axisProps} />
+            <CartesianGrid {...gridProps()} />
+            <XAxis dataKey="date" {...axisProps()} />
             <YAxis
-              {...axisProps}
+              {...axisProps()}
               domain={['dataMin - 3', 'dataMax + 3']}
               unit={` ${lengthUnit(unit)}`}
               width={64}
             />
-            <Tooltip {...tooltipProps} formatter={(value) => `${value} ${lengthUnit(unit)}`} />
+            <Tooltip {...tooltipProps()} formatter={(value) => `${value} ${lengthUnit(unit)}`} />
             {selected.map((site, i) => (
               <Line
                 key={site}
@@ -141,7 +141,7 @@ function TrendBadge({
   const points = history.map((h) => h[site]).filter((v): v is number => v !== null)
   if (points.length < 2) {
     return (
-      <span className="rounded-lg border border-white/10 px-2 py-1 text-xs text-slate-500">
+      <span className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-500 dark:border-white/10 dark:text-gray-400">
         {label}: needs 2 readings
       </span>
     )
@@ -152,12 +152,17 @@ function TrendBadge({
   const flat = Math.abs(deltaCm) < 0.5
 
   const Icon = flat ? Minus : deltaCm < 0 ? TrendingDown : TrendingUp
-  const tone = flat ? 'text-slate-400' : deltaCm < 0 ? 'text-emerald-400' : 'text-amber-400'
+  // Status hues, not the brand accent: a delta is state, not an action.
+  const tone = flat
+    ? 'text-gray-500 dark:text-gray-400'
+    : deltaCm < 0
+      ? 'text-success-600 dark:text-success-500'
+      : 'text-warning-600 dark:text-warning-500'
   const word = flat ? 'no change' : deltaCm < 0 ? 'slimmer' : 'larger'
 
   return (
     <span
-      className={`flex items-center gap-1.5 rounded-lg border border-white/10 px-2 py-1 text-xs ${tone}`}
+      className={`flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-1 text-xs dark:border-white/10 ${tone}`}
     >
       <Icon className="h-3.5 w-3.5" />
       {label}: {flat ? word : `${delta.toFixed(1)} ${lengthUnit(unit)} ${word}`}

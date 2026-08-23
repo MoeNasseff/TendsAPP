@@ -36,23 +36,24 @@ export function ConfirmDialog({
               animate={{ opacity: 1, scale: 1 }}
               exit={reduce ? undefined : { opacity: 0, scale: 0.98 }}
               transition={{ duration: DUR.base, ease: EASE }}
-              className="glass w-full max-w-sm rounded-2xl border p-6"
+              className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-lg dark:border-white/10 dark:bg-gray-900 dark:shadow-none"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-base font-semibold text-slate-100">{title}</h3>
-              <p className="mt-2 text-sm text-slate-400">{message}</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{message}</p>
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:bg-white/5"
+                  className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
                 >
                   Cancel
                 </button>
+                {/* Destructive, so error-500 rather than the brand accent. */}
                 <button
                   type="button"
                   onClick={onConfirm}
-                  className="rounded-lg bg-red-500/90 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+                  className="rounded-lg bg-error-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-error-600"
                 >
                   {confirmLabel}
                 </button>

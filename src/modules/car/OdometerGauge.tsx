@@ -45,7 +45,7 @@ export function OdometerGauge({
           {kmRemaining > 0 && <span className="text-xs text-slate-500">km left</span>}
         </div>
       </div>
-      <span className="text-sm font-medium text-slate-300">{label}</span>
+      <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</span>
     </div>
   )
 }

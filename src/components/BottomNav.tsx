@@ -13,7 +13,9 @@ export function BottomNav() {
           data-mood={mood}
           className={({ isActive }) =>
             `flex flex-col items-center gap-1.5 rounded-lg px-3 py-1.5 text-micro uppercase transition-colors duration-fast ease-out-expo ${
-              isActive ? 'text-mood-accent-safe' : 'text-white/50'
+              isActive
+                ? 'text-brand-500 dark:text-brand-400'
+                : 'text-gray-500 dark:text-gray-400'
             }`
           }
         >

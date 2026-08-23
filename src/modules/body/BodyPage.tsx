@@ -120,7 +120,7 @@ export function BodyPage() {
 
         <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-white/5 pt-4">
           <label htmlFor="body-weight" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Weight ({wt})</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Weight ({wt})</span>
             <input
               id="body-weight"
               type="number"
@@ -129,24 +129,24 @@ export function BodyPage() {
               inputMode="decimal"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className="form-input w-24 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+              className="form-input w-24 rounded-lg borderpx-2 py-1.5 text-sm outline-hidden"
             />
           </label>
           <label htmlFor="body-taken-at" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Date</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Date</span>
             <input
               id="body-taken-at"
               type="date"
               value={takenAt}
               onChange={(e) => setTakenAt(e.target.value)}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg borderpx-2 py-1.5 text-sm outline-hidden"
             />
           </label>
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="ml-auto flex items-center gap-2 rounded-lg bg-mood-accent px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="ml-auto flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving…' : 'Save session'}
@@ -159,7 +159,7 @@ export function BodyPage() {
         <Card>
         <div className="flex flex-wrap gap-3">
           <label htmlFor="body-height" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Height ({len})</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Height ({len})</span>
             <input
               id="body-height"
               type="number"
@@ -173,26 +173,26 @@ export function BodyPage() {
                   height_cm: Number.isFinite(v) && v > 0 ? Number(toStoredLength(v, unit).toFixed(1)) : null,
                 })
               }}
-              className="form-input w-28 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+              className="form-input w-28 rounded-lg borderpx-2 py-1.5 text-sm outline-hidden"
             />
           </label>
           <label htmlFor="body-birth-date" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Date of birth</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Date of birth</span>
             <input
               id="body-birth-date"
               type="date"
               defaultValue={profile.birth_date ?? ''}
               onBlur={(e) => saveProfile({ birth_date: e.target.value || null })}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg borderpx-2 py-1.5 text-sm outline-hidden"
             />
           </label>
           <label htmlFor="body-sex" className="flex flex-col gap-1">
-            <span className="text-micro uppercase text-white/50">Figure</span>
+            <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Figure</span>
             <select
               id="body-sex"
               value={profile.sex}
               onChange={(e) => saveProfile({ sex: e.target.value as Sex })}
-              className="form-input rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-slate-200 outline-hidden"
+              className="form-input rounded-lg borderpx-2 py-1.5 text-sm outline-hidden"
             >
               <option value="female">Female</option>
               <option value="male">Male</option>
@@ -219,14 +219,16 @@ function UnitToggle({
   onChange: (value: UnitSystem) => void
 }) {
   return (
-    <div className="flex rounded-xl border border-white/5 bg-black/20 p-1 text-xs">
+    <div className="flex rounded-xl border border-gray-200 bg-gray-100 p-1 text-xs dark:border-white/5 dark:bg-white/5">
       {(['metric', 'imperial'] as const).map((option) => (
         <button
           key={option}
           type="button"
           onClick={() => onChange(option)}
           className={`rounded-lg px-3 py-1 font-medium transition-colors ${
-            value === option ? 'bg-mood-accent text-white' : 'text-slate-400'
+            value === option
+                        ? 'bg-brand-500 text-white'
+                        : 'text-gray-500 dark:text-gray-400'
           }`}
         >
           {option === 'metric' ? 'cm / kg' : 'in / lb'}
@@ -242,7 +244,7 @@ function SexGate({ onPick }: { onPick: (sex: Sex) => void }) {
       <Card>
         <div className="flex flex-col items-center gap-4 px-4 py-6 text-center">
           <h2 className="text-base font-semibold text-slate-100">Which figure should we use?</h2>
-          <p className="max-w-xs text-sm text-slate-400">
+          <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
             This sets the outline and which measurements are shown. You can change it later.
           </p>
           <div className="mt-2 flex gap-3">
@@ -251,7 +253,7 @@ function SexGate({ onPick }: { onPick: (sex: Sex) => void }) {
                 key={sex}
                 type="button"
                 onClick={() => onPick(sex)}
-                className="min-w-28 rounded-xl border border-white/10 px-6 py-3 text-sm font-medium capitalize text-slate-200 transition-colors hover:border-mood-accent hover:text-mood-accent"
+                className="min-w-28 rounded-xl border border-gray-300 px-6 py-3 text-sm font-medium capitalize text-gray-700 transition-colors hover:border-brand-500 hover:text-brand-500 dark:border-white/10 dark:text-gray-200 dark:hover:border-brand-400 dark:hover:text-brand-400"
               >
                 {sex}
               </button>
