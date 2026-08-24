@@ -8,6 +8,10 @@ export interface ExtractedLineItem {
   discount: number | null
   category_id: string | null
   position: number | null
+  /** Only when the model actually identified a distinct product — feeds
+   * `products`/`price_observations` in save_receipt. Absent for a line item
+   * that is just a label with no brand/size signal. */
+  product?: { name: string; brand?: string | null; size_value?: number | null; size_unit?: string | null } | null
 }
 
 /**

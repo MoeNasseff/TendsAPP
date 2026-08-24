@@ -4,15 +4,26 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Modal } from '../../components/Modal'
 import { Portal } from '../../components/Portal'
 import { useToast } from '../../hooks/useToast'
+import { useAIProviders } from '../../hooks/useAIProviders'
+import { supabase } from '../../lib/supabase'
 import { formatCurrency } from '../../lib/format'
 import { fade, fadeUp } from '../../lib/motion'
+import { newId } from '../../lib/id'
 import { saveReceipt } from './useScanSave'
+import { extractReceipt, type CategoryOption, type ExtractedFields, type ExtractionFailureReason } from './extract'
 import type { ExtractedReceipt } from './scannerTypes'
+import type { DocumentType, ExtractionSource } from '../../lib/types'
 
 interface LineItem {
   id: string
   label: string
   amount: number
+  quantity: number | null
+  unitPrice: number | null
+  discount: number | null
+  brand: string | null
+  sizeValue: number | null
+  sizeUnit: string | null
 }
 
 interface ScannedInvoice {
@@ -22,102 +33,157 @@ interface ScannedInvoice {
   fileName: string
   vendor: string
   date: string
-  category: string
+  documentType: DocumentType
+  categoryId: string | null
   amount: number
   currency: string
-  confidence: number
+  confidence: number | null
   lineItems: LineItem[]
+  rawExtraction: unknown
+  extractionSource: ExtractionSource
   status: 'processing' | 'review' | 'approved'
   saving: boolean
   saveError: string | null
+  extractError: string | null
 }
 
-const CATEGORIES = ['Groceries', 'Fuel', 'Pharmacy', 'Utilities', 'Dining', 'Other']
-
-/** Mock extraction — no real OCR is wired yet (confirmed scope: UI scaffold
- * first, real computer-vision/price-matching pipeline is a scoped follow-up). */
-function mockExtract(
-  fileName: string,
-): Omit<ScannedInvoice, 'id' | 'fileName' | 'status' | 'clientRef' | 'file' | 'saving' | 'saveError'> {
-  const samples = [
-    {
-      vendor: 'Carrefour Market',
-      category: 'Groceries',
-      amount: 486.5,
-      lineItems: [
-        { id: 'l1', label: 'Produce & bakery', amount: 142.0 },
-        { id: 'l2', label: 'Household supplies', amount: 189.5 },
-        { id: 'l3', label: 'Pantry items', amount: 155.0 },
-      ],
-    },
-    {
-      vendor: 'Total Fuel Station',
-      category: 'Fuel',
-      amount: 620.0,
-      lineItems: [{ id: 'l1', label: '92 Octane, 30L', amount: 620.0 }],
-    },
-    {
-      vendor: 'El Ezaby Pharmacy',
-      category: 'Pharmacy',
-      amount: 214.75,
-      lineItems: [
-        { id: 'l1', label: 'Prescription refill', amount: 168.75 },
-        { id: 'l2', label: 'First-aid supplies', amount: 46.0 },
-      ],
-    },
-  ]
-  const pick = samples[Math.abs(hashCode(fileName)) % samples.length]
-  return {
-    vendor: pick.vendor,
-    date: new Date().toISOString().slice(0, 10),
-    category: pick.category,
-    amount: pick.amount,
-    currency: 'EGP',
-    confidence: 0.86 + (Math.abs(hashCode(fileName)) % 12) / 100,
-    lineItems: pick.lineItems,
+function extractErrorMessage(reason: ExtractionFailureReason): string {
+  switch (reason) {
+    case 'unavailable':
+      return 'No AI provider is configured — enter this one manually, or add a key in Settings.'
+    case 'byok_not_configured':
+      return 'Your AI key isn’t set up yet — enter this one manually, or fix it in Settings.'
+    case 'provider_error':
+      return 'The AI provider couldn’t read this image — try again, or enter it manually.'
+    case 'transport_error':
+      return 'Couldn’t reach the AI service — check your connection and try again.'
+    case 'invalid_document':
+      return 'This doesn’t look like a receipt or invoice — try another photo, or enter it manually.'
+    case 'malformed_response':
+      return 'Couldn’t make sense of what came back — try again, or enter it manually.'
   }
 }
 
-function hashCode(s: string) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i)
-  return h
+/** Applies whatever the extraction call produced — full or partial — onto
+ * an invoice. Only overwrites fields that actually came back so a partial
+ * read never blanks out something the user already fixed on retry. */
+function applyFields(fields: Partial<ExtractedFields>): Partial<ScannedInvoice> {
+  const patch: Partial<ScannedInvoice> = {}
+  if (fields.merchantName !== undefined && fields.merchantName !== null) patch.vendor = fields.merchantName
+  if (fields.issuedAt) patch.date = fields.issuedAt
+  if (fields.documentType) patch.documentType = fields.documentType
+  if (fields.categoryId !== undefined) patch.categoryId = fields.categoryId
+  if (fields.total !== undefined && fields.total !== null) patch.amount = fields.total
+  if (fields.currency) patch.currency = fields.currency
+  if (fields.confidence !== undefined) patch.confidence = fields.confidence
+  if (fields.items) {
+    patch.lineItems = fields.items.map((item, i) => ({
+      id: `l${i}`,
+      label: item.label,
+      amount: item.lineTotal ?? item.unitPrice ?? 0,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      brand: item.brand,
+      sizeValue: item.sizeValue,
+      sizeUnit: item.sizeUnit,
+    }))
+  }
+  return patch
+}
+
+function hasAnyField(fields: Partial<ExtractedFields>): boolean {
+  return Object.values(fields).some((v) => v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0))
 }
 
 export function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const showToast = useToast()
+  const { resolutionFor, states } = useAIProviders()
+  const [categories, setCategories] = useState<CategoryOption[]>([])
   const [invoices, setInvoices] = useState<ScannedInvoice[]>([])
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [showCamera, setShowCamera] = useState(false)
 
+  useEffect(() => {
+    let cancelled = false
+    supabase
+      .from('expense_categories')
+      .select('id, name')
+      .order('name')
+      .then(({ data }) => {
+        if (!cancelled) setCategories((data as CategoryOption[] | null) ?? [])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function runExtraction(id: string, file: File) {
+    setInvoices((prev) => prev.map((inv) => (inv.id === id ? { ...inv, status: 'processing', extractError: null } : inv)))
+
+    const resolution = resolutionFor('vision')
+    const model = states.find((s) => s.provider === 'gemini')?.model ?? undefined
+
+    // extractReceipt reports failure by return value, but an unforeseen throw
+    // here would otherwise leave the ticket spinning on 'processing' with
+    // nothing on screen to explain it. A visible error beats a silent hang.
+    let outcome: Awaited<ReturnType<typeof extractReceipt>>
+    try {
+      outcome = await extractReceipt(file, resolution, categories, model)
+    } catch {
+      outcome = { ok: false, reason: 'provider_error', fields: {} }
+    }
+
+    setInvoices((prev) =>
+      prev.map((inv) => {
+        if (inv.id !== id) return inv
+        if (outcome.ok) {
+          return {
+            ...inv,
+            ...applyFields(outcome.fields),
+            rawExtraction: outcome.raw,
+            extractionSource: 'ai',
+            status: 'review',
+            extractError: null,
+          }
+        }
+        return {
+          ...inv,
+          ...applyFields(outcome.fields),
+          extractionSource: hasAnyField(outcome.fields) ? 'ai' : inv.extractionSource,
+          status: 'review',
+          extractError: extractErrorMessage(outcome.reason),
+        }
+      }),
+    )
+    setReviewingId(id)
+  }
+
   function handleFile(file: File) {
-    const id = crypto.randomUUID()
+    const id = newId()
     const entry: ScannedInvoice = {
       id,
-      clientRef: crypto.randomUUID(),
+      clientRef: newId(),
       file,
       fileName: file.name,
       status: 'processing',
       vendor: '',
       date: '',
-      category: CATEGORIES[0],
+      documentType: 'receipt',
+      categoryId: null,
       amount: 0,
       currency: 'EGP',
-      confidence: 0,
+      confidence: null,
       lineItems: [],
+      rawExtraction: null,
+      extractionSource: 'manual',
       saving: false,
       saveError: null,
+      extractError: null,
     }
     setInvoices((prev) => [entry, ...prev])
-
-    // Mock "developing" delay — stands in for the real async OCR pipeline.
-    setTimeout(() => {
-      setInvoices((prev) =>
-        prev.map((inv) => (inv.id === id ? { ...inv, ...mockExtract(file.name), status: 'review' } : inv)),
-      )
-      setReviewingId(id)
-    }, 1400)
+    void runExtraction(id, file)
   }
 
   function handleFilesSelected(files: FileList | null) {
@@ -128,6 +194,11 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
   function updateReviewing(patch: Partial<ScannedInvoice>) {
     if (!reviewingId) return
     setInvoices((prev) => prev.map((inv) => (inv.id === reviewingId ? { ...inv, ...patch } : inv)))
+  }
+
+  function retryExtraction() {
+    const invoice = invoices.find((inv) => inv.id === reviewingId)
+    if (invoice?.file) void runExtraction(invoice.id, invoice.file)
   }
 
   async function hangUp() {
@@ -143,7 +214,7 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
     const extracted: ExtractedReceipt = {
       client_ref: invoice.clientRef,
       merchant: invoice.vendor ? { name: invoice.vendor } : null,
-      document_type: 'receipt',
+      document_type: invoice.documentType,
       image_url: null,
       invoice_number: null,
       issued_at: invoice.date || null,
@@ -153,22 +224,23 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
       total: invoice.amount,
       currency: invoice.currency,
       extraction_confidence: invoice.confidence,
-      extraction_source: 'mock',
-      raw_extraction: null,
-      // Categorisation against the user's real expense_categories is Packet
-      // 6's job (real AI classification) — the mock's free-text category
-      // stays display-only for now rather than being matched or invented.
-      category_id: null,
+      extraction_source: invoice.extractionSource,
+      raw_extraction: invoice.rawExtraction,
+      category_id: invoice.categoryId,
       note: null,
       spent_at: invoice.date || new Date().toISOString().slice(0, 10),
       items: invoice.lineItems.map((item, i) => ({
         label: item.label,
-        quantity: null,
-        unit_price: item.amount,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
         line_total: item.amount,
-        discount: null,
+        discount: item.discount,
         category_id: null,
         position: i,
+        product:
+          item.brand || item.sizeValue
+            ? { name: item.label, brand: item.brand, size_value: item.sizeValue, size_unit: item.sizeUnit }
+            : null,
       })),
     }
 
@@ -208,13 +280,14 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
 
           {invoices.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-micro uppercase text-white/50">On the hook</h2>
+              <h2 className="text-micro uppercase text-gray-500 dark:text-gray-400">On the hook</h2>
               <div className="flex flex-col gap-3">
                 <AnimatePresence>
                   {invoices.map((inv) => (
                     <InvoiceTicket
                       key={inv.id}
                       invoice={inv}
+                      categories={categories}
                       onReview={() => setReviewingId(inv.id)}
                       onDiscard={() => discard(inv.id)}
                     />
@@ -232,10 +305,12 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
           them behind Modal's own (correctly portaled) overlay. See Portal.tsx. */}
       <ReviewPanel
         invoice={reviewing}
+        categories={categories}
         onClose={() => setReviewingId(null)}
         onChange={updateReviewing}
         onHangUp={hangUp}
         onDiscard={() => reviewing && discard(reviewing.id)}
+        onRetryExtract={retryExtraction}
       />
 
       <AnimatePresence>
@@ -267,7 +342,7 @@ function CaptureCard({
   return (
     <motion.div
       {...fadeUp}
-      className="flex flex-col items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-8 text-center"
+      className="flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-8 text-center dark:border-white/10 dark:bg-white/5"
     >
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mood-accent/15 text-mood-accent">
         <ScanLine className="h-6 w-6" />
@@ -290,7 +365,7 @@ function CaptureCard({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="tap-target flex items-center justify-center gap-2 rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/5"
+          className="tap-target flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
         >
           <Upload className="h-4 w-4" />
           Upload a photo
@@ -366,7 +441,10 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (file: File) => void
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-50 bg-black"
+      // Above the header's z-99999. At z-50 the sticky header painted straight
+      // over the top of the camera feed — the viewfinder is meant to be the
+      // only thing on screen, so it has to outrank every piece of app chrome.
+      className="fixed inset-0 z-[100000] bg-black"
     >
       {error ? (
         <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
@@ -420,19 +498,22 @@ function CameraCapture({ onCapture, onClose }: { onCapture: (file: File) => void
 
 function InvoiceTicket({
   invoice,
+  categories,
   onReview,
   onDiscard,
 }: {
   invoice: ScannedInvoice
+  categories: CategoryOption[]
   onReview: () => void
   onDiscard: () => void
 }) {
+  const categoryName = categories.find((c) => c.id === invoice.categoryId)?.name ?? 'Uncategorized'
   return (
     <motion.div
       layout
       {...fade}
       exit={{ opacity: 0, transition: { duration: 0.18 } }}
-      className="flex items-center gap-4 rounded-xl border border-white/10 bg-black/20 p-4"
+      className="flex items-center gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/5"
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mood-accent/15 text-mood-accent">
         {invoice.status === 'processing' ? (
@@ -450,14 +531,14 @@ function InvoiceTicket({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-          {invoice.status === 'processing' ? 'Reading receipt…' : invoice.vendor}
+          {invoice.status === 'processing' ? 'Reading receipt…' : invoice.vendor || 'Untitled'}
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {invoice.status === 'processing'
             ? invoice.fileName
             : invoice.status === 'approved'
-              ? `Hung up · ${invoice.category}`
-              : `Needs a look · ${invoice.category}`}
+              ? `Hung up · ${categoryName}`
+              : `Needs a look · ${categoryName}`}
         </p>
       </div>
       {invoice.status !== 'processing' && (
@@ -490,16 +571,20 @@ function InvoiceTicket({
 
 function ReviewPanel({
   invoice,
+  categories,
   onClose,
   onChange,
   onHangUp,
   onDiscard,
+  onRetryExtract,
 }: {
   invoice: ScannedInvoice | null
+  categories: CategoryOption[]
   onClose: () => void
   onChange: (patch: Partial<ScannedInvoice>) => void
   onHangUp: () => void | Promise<void>
   onDiscard: () => void
+  onRetryExtract: () => void
 }) {
   return (
     <AnimatePresence>
@@ -527,25 +612,54 @@ function ReviewPanel({
                   type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="tap-target rounded-lg p-1.5 text-slate-500 hover:bg-black/5 hover:text-slate-700 dark:hover:bg-white/5 dark:hover:text-slate-300"
+                  className="tap-target rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <div className="mb-4 flex items-center gap-2 rounded-lg bg-black/20 px-3 py-2">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-mood-accent"
-                    style={{ width: `${Math.round(invoice.confidence * 100)}%` }}
-                  />
+              {invoice.confidence !== null && (
+                <div className="mb-4 flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 dark:bg-white/5">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-mood-accent"
+                      style={{ width: `${Math.min(100, Math.max(0, Math.round(invoice.confidence * 100)))}%` }}
+                    />
+                  </div>
+                  <span className="text-micro uppercase text-gray-500 dark:text-gray-400">
+                    {Math.round(invoice.confidence * 100)}% read
+                  </span>
                 </div>
-                <span className="text-micro uppercase text-white/50">{Math.round(invoice.confidence * 100)}% read</span>
-              </div>
+              )}
+
+              {invoice.extractError && (
+                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  <p>{invoice.extractError}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={onRetryExtract}
+                      disabled={invoice.status === 'processing'}
+                      className="tap-target flex items-center gap-1.5 rounded-lg border border-amber-500/30 px-3 py-1.5 font-medium disabled:opacity-50"
+                    >
+                      {invoice.status === 'processing' && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                      {invoice.status === 'processing' ? 'Retrying…' : 'Retry'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ extractError: null })}
+                      disabled={invoice.status === 'processing'}
+                      className="tap-target rounded-lg px-3 py-1.5 font-medium text-slate-500 hover:bg-white/5 disabled:opacity-50 dark:text-slate-400"
+                    >
+                      Enter manually
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col gap-4">
                 <label className="flex flex-col gap-1">
-                  <span className="text-micro uppercase text-white/50">Vendor</span>
+                  <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Vendor</span>
                   <input
                     value={invoice.vendor}
                     onChange={(e) => onChange({ vendor: e.target.value })}
@@ -555,7 +669,7 @@ function ReviewPanel({
 
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-micro uppercase text-white/50">Date</span>
+                    <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Date</span>
                     <input
                       type="date"
                       value={invoice.date}
@@ -564,15 +678,16 @@ function ReviewPanel({
                     />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-micro uppercase text-white/50">Category</span>
+                    <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Category</span>
                     <select
-                      value={invoice.category}
-                      onChange={(e) => onChange({ category: e.target.value })}
+                      value={invoice.categoryId ?? ''}
+                      onChange={(e) => onChange({ categoryId: e.target.value || null })}
                       className="form-input rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 outline-hidden"
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
+                      <option value="">Uncategorized</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
                         </option>
                       ))}
                     </select>
@@ -580,7 +695,7 @@ function ReviewPanel({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <span className="text-micro uppercase text-white/50">Line items</span>
+                  <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Line items</span>
                   <div className="flex flex-col divide-y divide-white/10">
                     {invoice.lineItems.map((item) => (
                       <div key={item.id} className="flex items-center justify-between py-2 text-sm text-slate-200">
@@ -592,7 +707,7 @@ function ReviewPanel({
                 </div>
 
                 <label className="flex flex-col gap-1">
-                  <span className="text-micro uppercase text-white/50">Total</span>
+                  <span className="text-micro uppercase text-gray-500 dark:text-gray-400">Total</span>
                   <input
                     type="number"
                     step="0.01"
@@ -612,7 +727,7 @@ function ReviewPanel({
                   <button
                     type="button"
                     onClick={onHangUp}
-                    disabled={invoice.saving}
+                    disabled={invoice.saving || invoice.status === 'processing'}
                     className="tap-target flex flex-1 items-center justify-center gap-2 rounded-lg bg-mood-accent py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {invoice.saving && <RefreshCw className="h-4 w-4 animate-spin" />}
@@ -628,7 +743,7 @@ function ReviewPanel({
                   </button>
                 </div>
                 <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                  Filed to Expenses once hung up — extraction shown here is a preview, not yet backed by live scanning.
+                  Filed to Expenses once hung up — check the read against the paper before you confirm.
                 </p>
               </div>
             </motion.div>

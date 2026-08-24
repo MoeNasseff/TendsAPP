@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase'
+import { newId } from '../../lib/id'
 import type { ExtractedReceipt } from './scannerTypes'
 
 /**
@@ -17,7 +18,7 @@ export async function saveReceipt(extracted: ExtractedReceipt, imageFile: File |
 
   let imageUrl = extracted.image_url
   if (imageFile) {
-    const path = `${user.id}/receipts/${crypto.randomUUID()}-${imageFile.name}`
+    const path = `${user.id}/receipts/${newId()}-${imageFile.name}`
     const { error: uploadError } = await supabase.storage.from('media').upload(path, imageFile)
     if (uploadError) throw uploadError
     const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(path)
