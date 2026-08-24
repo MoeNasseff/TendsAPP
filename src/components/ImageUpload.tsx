@@ -1,3 +1,4 @@
+import { newId } from '../lib/id'
 import { useRef, useState, type ChangeEvent } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -24,7 +25,7 @@ export function ImageUpload({
     if (!file || !user) return
 
     setUploading(true)
-    const path = `${user.id}/${folder}/${crypto.randomUUID()}-${file.name}`
+    const path = `${user.id}/${folder}/${newId()}-${file.name}`
     const { error } = await supabase.storage.from('media').upload(path, file)
     setUploading(false)
 

@@ -1,3 +1,4 @@
+import { newId } from '../../lib/id'
 import { useEffect, useRef, useState } from 'react'
 import { Camera, Check, Laptop, Moon, Sun } from 'lucide-react'
 import { PageHeader } from '../../components/PageHeader'
@@ -40,7 +41,7 @@ export function SettingsPage() {
   async function handleAvatarSelected(file: File | undefined) {
     if (!file || !user) return
     setUploadingAvatar(true)
-    const path = `${user.id}/avatars/${crypto.randomUUID()}-${file.name}`
+    const path = `${user.id}/avatars/${newId()}-${file.name}`
     const { error: uploadError } = await supabase.storage.from('media').upload(path, file)
     if (uploadError) {
       setUploadingAvatar(false)
