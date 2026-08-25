@@ -108,20 +108,7 @@ export const NAV_GROUPS: NavGroup[] = [
         name: 'Tends',
         icon: Leaf,
         subItems: [
-          {
-            name: 'Expenses',
-            subItems: [
-              { name: 'Overview', path: '/expenses' },
-              { name: 'Products', path: '/products-list' },
-              { name: 'Add Product', path: '/add-product' },
-              { name: 'Billing', path: '/billing' },
-              { name: 'Invoices', path: '/invoices' },
-              { name: 'Single Invoice', path: '/single-invoice' },
-              { name: 'Create Invoice', path: '/create-invoice' },
-              { name: 'Transactions', path: '/transactions' },
-              { name: 'Single Transaction', path: '/single-transaction' },
-            ],
-          },
+          { name: 'Overview', path: '/expenses' },
           ...NAV_ITEMS.filter(({ to }) => to !== '/expenses').map(({ to, label }) => ({
             name: label,
             path: to,
@@ -158,7 +145,7 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
       },
       {
-        name: 'E-commerce',
+        name: 'Freelancing',
         icon: CartIcon,
         subItems: [
           { name: 'Products', path: '/products-list' },
