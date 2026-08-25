@@ -121,21 +121,21 @@ export const router = createBrowserRouter([
               {
                 path: 'invoices',
                 lazy: async () => {
-                  const { InvoicesPage } = await import('./modules/expenses/InvoicesPage')
+                  const { InvoicesPage } = await import('./modules/freelancing/InvoicesPage')
                   return { Component: InvoicesPage }
                 },
               },
               {
                 path: 'single-invoice',
                 lazy: async () => {
-                  const { SingleInvoicePage } = await import('./modules/expenses/SingleInvoicePage')
+                  const { SingleInvoicePage } = await import('./modules/freelancing/SingleInvoicePage')
                   return { Component: SingleInvoicePage }
                 },
               },
               {
                 path: 'create-invoice',
                 lazy: async () => {
-                  const { CreateInvoicePage } = await import('./modules/expenses/CreateInvoicePage')
+                  const { CreateInvoicePage } = await import('./modules/freelancing/CreateInvoicePage')
                   return { Component: CreateInvoicePage }
                 },
               },

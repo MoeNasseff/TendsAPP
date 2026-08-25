@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Wallet, TrendingUp, Calendar, Receipt, Plus, ScanLine } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { StatCard } from '../../components/StatCard'
@@ -8,7 +7,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { PrivacyToggle } from '../../components/PrivacyToggle'
 import { StatGrid } from '../../components/StatGrid'
 import { Section } from '../../components/Section'
-// import { Modal } from '../../components/Modal' // hashed out with the add/edit flow
+import { Modal } from '../../components/Modal'
 import { DataGrid, type DataGridColumn } from '../../components/DataGrid'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -16,7 +15,7 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { CHART_SERIES, tooltipProps, axisProps } from '../../lib/chartTheme'
 import { useExpenses } from './useExpenses'
-// import { ExpenseForm } from './ExpenseForm' // hashed out with the add/edit flow
+import { ExpenseForm } from './ExpenseForm'
 import { ScanModal } from '../scanner/ScanModal'
 import type { Expense } from '../../lib/types'
 
@@ -35,18 +34,11 @@ function isSameMonth(iso: string, ref: Date) {
 }
 
 export function ExpensesPage() {
-  // addExpense/updateExpense/addCategory come back with the hashed-out modal.
-  const { categories, expenses, loading, deleteExpense } = useExpenses()
-  const navigate = useNavigate()
+  const { categories, expenses, loading, addExpense, updateExpense, deleteExpense, addCategory } = useExpenses()
   const [deleteTarget, setDeleteTarget] = useState<Expense | null>(null)
   const [scanOpen, setScanOpen] = useState(false)
-  // ── Add/Edit expense modal: hashed out, kept for later ──────────────────
-  // The + button now goes to /invoices instead of opening this. Restoring it
-  // means uncommenting, in this file: these two state hooks, handleSubmit,
-  // the <Modal> block near the bottom, DataGrid's onEdit prop, the Modal and
-  // ExpenseForm imports, and addExpense/updateExpense in the destructure above.
-  // const [editing, setEditing] = useState<Expense | null>(null)
-  // const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<Expense | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [filterCategory, setFilterCategory] = useState('')
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
@@ -141,16 +133,15 @@ export function ExpensesPage() {
 
   const expenseById = useMemo(() => new Map(expenses.map((e) => [e.id, e])), [expenses])
 
-  // Part of the hashed-out add/edit modal above.
-  // async function handleSubmit(input: Parameters<typeof addExpense>[0]) {
-  //   if (editing) {
-  //     await updateExpense(editing.id, input)
-  //     setEditing(null)
-  //   } else {
-  //     await addExpense(input)
-  //   }
-  //   setFormOpen(false)
-  // }
+  async function handleSubmit(input: Parameters<typeof addExpense>[0]) {
+    if (editing) {
+      await updateExpense(editing.id, input)
+      setEditing(null)
+    } else {
+      await addExpense(input)
+    }
+    setFormOpen(false)
+  }
 
   if (loading) return <PageSkeleton />
 
@@ -170,12 +161,10 @@ export function ExpensesPage() {
               <ScanLine className="h-4 w-4" />
               Scan
             </button>
-            {/* Was: open the add-expense modal. Now routes to the invoices
-                page, where Scan and Create an Invoice both live. */}
             <button
               type="button"
-              onClick={() => navigate('/invoices')}
-              aria-label="Go to invoices"
+              onClick={() => setFormOpen(true)}
+              aria-label="Add expense"
               className="rounded-lg bg-brand-500 p-2 text-white transition-colors duration-fast ease-out-expo hover:bg-brand-600"
             >
               <Plus className="h-4 w-4" />
@@ -223,7 +212,6 @@ export function ExpensesPage() {
         </Card>
       </Section>
 
-      {/* ── Hashed out with the add/edit flow. Restore together. ──────────
       <Modal
         open={formOpen}
         onClose={() => {
@@ -243,7 +231,6 @@ export function ExpensesPage() {
           onAddCategory={addCategory}
         />
       </Modal>
-      ────────────────────────────────────────────────────────────────── */}
 
       <Section title="Transactions">
         <Card>
@@ -284,15 +271,13 @@ export function ExpensesPage() {
           <DataGrid
             columns={tableColumns}
             data={tableRows}
-            // Hashed out with the modal — DataGrid only renders the edit
-            // pencil when onEdit is passed, so nothing dead is left behind.
-            // onEdit={(row) => {
-            //   const expense = expenseById.get(row.id)
-            //   if (expense) {
-            //     setEditing(expense)
-            //     setFormOpen(true)
-            //   }
-            // }}
+            onEdit={(row) => {
+              const expense = expenseById.get(row.id)
+              if (expense) {
+                setEditing(expense)
+                setFormOpen(true)
+              }
+            }}
             onDelete={(row) => {
               const expense = expenseById.get(row.id)
               if (expense) setDeleteTarget(expense)

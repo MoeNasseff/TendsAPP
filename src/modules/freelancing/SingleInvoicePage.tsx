@@ -4,7 +4,7 @@ import { PageSkeleton } from '../../components/PageSkeleton'
 import { useProfile } from '../../hooks/useProfile'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { DEMO_ID_PREFIX, findDemoReceipt } from './invoice-data'
-import { displayNumber, useReceipt } from './useReceipts'
+import { displayNumber, useReceipt } from '../expenses/useReceipts'
 
 /**
  * Clone of https://demo.tailadmin.com/single-invoice, transcribed from

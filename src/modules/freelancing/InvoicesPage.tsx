@@ -10,7 +10,7 @@ import {
   statusFor,
   useReceipts,
   type ReceiptRow,
-} from './useReceipts'
+} from '../expenses/useReceipts'
 
 /**
  * Clone of https://demo.tailadmin.com/invoices, transcribed from

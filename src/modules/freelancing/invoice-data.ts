@@ -1,5 +1,5 @@
 import type { ReceiptItem } from '../../lib/types'
-import type { ReceiptRow, ReceiptWithItems } from './useReceipts'
+import type { ReceiptRow, ReceiptWithItems } from '../expenses/useReceipts'
 
 /**
  * Placeholder invoice rows, copied from the `invoiceTable()` Alpine component
