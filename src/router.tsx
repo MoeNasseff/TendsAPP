@@ -140,6 +140,13 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'analytics',
+                lazy: async () => {
+                  const { AnalyticsPage } = await import('./modules/analytics/AnalyticsPage')
+                  return { Component: AnalyticsPage }
+                },
+              },
+              {
                 path: 'api-keys',
                 lazy: async () => {
                   const { ApiKeysPage } = await import('./modules/settings/ApiKeysPage')
