@@ -1,0 +1,132 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../hooks/useAuth'
+import { useRealtime } from '../../hooks/useRealtime'
+import type { Expense, ExpenseCategory, Merchant, PriceObservation, Product, Receipt } from '../../lib/types'
+import {
+  computeCategoryRollups,
+  computeHighLowSpendDays,
+  computeMerchantRollups,
+  computeMonthOverMonthDelta,
+  computeProductPriceChanges,
+  computeRecurringCandidates,
+  computeTotals,
+  computeWeekOverWeekDelta,
+  monthRangeFor,
+} from './compute'
+import type {
+  AnalyticsResult,
+  CategoryRollup,
+  DateRange,
+  HighLowSpendDays,
+  MerchantRollup,
+  PeriodDelta,
+  PeriodTotals,
+  ProductPriceChange,
+  RecurringCandidate,
+} from './types'
+
+export function useAnalytics() {
+  const { user } = useAuth()
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [categories, setCategories] = useState<ExpenseCategory[]>([])
+  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [merchants, setMerchants] = useState<Merchant[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [priceObservations, setPriceObservations] = useState<PriceObservation[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    if (!user) return
+    const [expRes, catRes, receiptRes, merchantRes, productRes, priceRes] = await Promise.all([
+      supabase.from('expenses').select('*').order('spent_at', { ascending: false }),
+      supabase.from('expense_categories').select('*').order('name'),
+      supabase.from('receipts').select('*'),
+      supabase.from('merchants').select('*'),
+      supabase.from('products').select('*'),
+      supabase.from('price_observations').select('*').order('observed_at', { ascending: true }),
+    ])
+    setExpenses(expRes.data ?? [])
+    setCategories(catRes.data ?? [])
+    setReceipts(receiptRes.data ?? [])
+    setMerchants(merchantRes.data ?? [])
+    setProducts(productRes.data ?? [])
+    setPriceObservations(priceRes.data ?? [])
+    setLoading(false)
+  }, [user])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  useRealtime('expenses', load)
+  useRealtime('expense_categories', load)
+  useRealtime('receipts', load)
+  useRealtime('merchants', load)
+  useRealtime('products', load)
+  useRealtime('price_observations', load)
+
+  const thisMonth = useMemo(() => monthRangeFor(new Date()), [])
+
+  const totals = useMemo<AnalyticsResult<PeriodTotals>>(() => computeTotals(expenses, thisMonth), [expenses, thisMonth])
+
+  const highLowSpendDays = useMemo<AnalyticsResult<HighLowSpendDays>>(
+    () => computeHighLowSpendDays(expenses, thisMonth),
+    [expenses, thisMonth],
+  )
+
+  const categoryRollups = useMemo<AnalyticsResult<{ rollups: CategoryRollup[] }>>(
+    () => computeCategoryRollups(expenses, categories, thisMonth),
+    [expenses, categories, thisMonth],
+  )
+
+  const merchantRollups = useMemo<AnalyticsResult<{ rollups: MerchantRollup[] }>>(
+    () => computeMerchantRollups(expenses, receipts, merchants, thisMonth),
+    [expenses, receipts, merchants, thisMonth],
+  )
+
+  const monthOverMonth = useMemo<AnalyticsResult<PeriodDelta>>(() => computeMonthOverMonthDelta(expenses), [expenses])
+
+  const weekOverWeek = useMemo<AnalyticsResult<PeriodDelta>>(() => computeWeekOverWeekDelta(expenses), [expenses])
+
+  const recurringCandidates = useMemo<AnalyticsResult<{ candidates: RecurringCandidate[] }>>(
+    () => computeRecurringCandidates(expenses, receipts, merchants),
+    [expenses, receipts, merchants],
+  )
+
+  const productPriceChanges = useMemo<AnalyticsResult<{ changes: ProductPriceChange[] }>>(
+    () => computeProductPriceChanges(priceObservations, products),
+    [priceObservations, products],
+  )
+
+  // Lets a consumer (e.g. a date-range picker) ask for the same rollups over
+  // an arbitrary window without re-deriving the fetch/join logic itself.
+  const computeForRange = useCallback(
+    (range: DateRange) => ({
+      totals: computeTotals(expenses, range),
+      highLowSpendDays: computeHighLowSpendDays(expenses, range),
+      categoryRollups: computeCategoryRollups(expenses, categories, range),
+      merchantRollups: computeMerchantRollups(expenses, receipts, merchants, range),
+    }),
+    [expenses, categories, receipts, merchants],
+  )
+
+  return {
+    loading,
+    expenses,
+    categories,
+    receipts,
+    merchants,
+    products,
+    priceObservations,
+    totals,
+    highLowSpendDays,
+    categoryRollups,
+    merchantRollups,
+    monthOverMonth,
+    weekOverWeek,
+    recurringCandidates,
+    productPriceChanges,
+    computeForRange,
+  }
+}
