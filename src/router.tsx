@@ -140,6 +140,13 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'bills',
+                lazy: async () => {
+                  const { BillsPage } = await import('./modules/bills/BillsPage')
+                  return { Component: BillsPage }
+                },
+              },
+              {
                 path: 'analytics',
                 lazy: async () => {
                   const { AnalyticsPage } = await import('./modules/analytics/AnalyticsPage')

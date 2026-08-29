@@ -24,6 +24,7 @@ import { SensitiveValue } from '../../components/SensitiveValue'
 import { axisProps, CHART_SERIES, gridProps, tooltipProps } from '../../lib/chartTheme'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { DUR, EASE } from '../../lib/motion'
+import { BillsStrip } from '../bills/BillsStrip'
 import { InstallmentCards } from '../installments/InstallmentCards'
 import { useInstallments } from '../installments/useInstallments'
 import { InsightCards } from './InsightCards'
@@ -528,8 +529,12 @@ export function AnalyticsPage() {
           </div>
         </Cell>
 
-        {/* ── Installments (dormant until the migration is applied) ─ */}
+        {/* ── Installments and recurring commitments ─────────────── */}
         <InstallmentCards />
+
+        <Cell className="col-span-12" index={5}>
+          <BillsStrip />
+        </Cell>
 
         {/* ── Item-level spending ────────────────────────────────── */}
         <Cell className="col-span-12 xl:col-span-7" index={5}>

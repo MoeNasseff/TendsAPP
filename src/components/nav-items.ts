@@ -109,6 +109,8 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Leaf,
         subItems: [
           { name: 'Overview', path: '/expenses' },
+          { name: 'Analytics', path: '/analytics' },
+          { name: 'Bills', path: '/bills' },
           ...NAV_ITEMS.filter(({ to }) => to !== '/expenses').map(({ to, label }) => ({
             name: label,
             path: to,

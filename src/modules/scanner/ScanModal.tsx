@@ -237,10 +237,18 @@ export function ScanModal({ open, onClose }: { open: boolean; onClose: () => voi
         discount: item.discount,
         category_id: null,
         position: i,
-        product:
-          item.brand || item.sizeValue
-            ? { name: item.label, brand: item.brand, size_value: item.sizeValue, size_unit: item.sizeUnit }
-            : null,
+        // A product row is emitted for every line that has a price, not only
+        // for lines carrying a brand or a pack size. The old gate required
+        // one of those two, which meant a receipt printing category-style
+        // lines ("Prescription refill", "Produce & bakery") created no
+        // products at all — and since price_observations requires a
+        // product_id, no price history either. Brand and size stay optional
+        // and still sharpen the match: they are part of the uniqueness key,
+        // and analytics flags a product lacking them as a 'possible' rather
+        // than 'exact' match rather than silently conflating two things.
+        product: item.unitPrice !== null || item.amount !== null
+          ? { name: item.label, brand: item.brand, size_value: item.sizeValue, size_unit: item.sizeUnit }
+          : null,
       })),
     }
 

@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { CalendarClock, CreditCard } from 'lucide-react'
+import { CalendarClock, CreditCard, Plus } from 'lucide-react'
 import { Badge } from '../../components/Badge'
+import { Modal } from '../../components/Modal'
 import { SensitiveValue } from '../../components/SensitiveValue'
 import { formatCurrency, formatDate } from '../../lib/format'
+import { PaymentMethodForm } from './PaymentMethodForm'
+import { PlanForm } from './PlanForm'
 import { logoPath, monogram, NEUTRAL_BRAND, providerFor } from './providers'
 import { useInstallments } from './useInstallments'
 import type { MethodExposure, UpcomingDue } from './types'
@@ -140,7 +143,9 @@ function DueRow({ due }: { due: UpcomingDue }) {
 }
 
 export function InstallmentCards() {
-  const { loading, availability, exposures, upcomingDues, summary } = useInstallments()
+  const { loading, availability, exposures, upcomingDues, summary, methods, addMethod, addPlan } = useInstallments()
+  const [methodOpen, setMethodOpen] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
 
   if (loading) return null
 
@@ -178,11 +183,31 @@ export function InstallmentCards() {
                   : 'How much of each limit your plans are using'}
               </span>
             </div>
-            {summary.status === 'ok' && summary.lateCount > 0 && (
-              <Badge color="error" size="sm">
-                {summary.lateCount} late
-              </Badge>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {summary.status === 'ok' && summary.lateCount > 0 && (
+                <Badge color="error" size="sm">
+                  {summary.lateCount} late
+                </Badge>
+              )}
+              <button
+                type="button"
+                onClick={() => setMethodOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Card
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanOpen(true)}
+                disabled={methods.length === 0}
+                title={methods.length === 0 ? 'Add a card or BNPL account first' : undefined}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Plan
+              </button>
+            </div>
           </div>
 
           {hasMethods ? (
@@ -235,6 +260,29 @@ export function InstallmentCards() {
           )}
         </div>
       </div>
+
+      <Modal open={methodOpen} onClose={() => setMethodOpen(false)} title="Add a card or BNPL account">
+        <PaymentMethodForm
+          onCancel={() => setMethodOpen(false)}
+          onSubmit={async (input) => {
+            const { error } = await addMethod(input)
+            if (error) throw error
+            setMethodOpen(false)
+          }}
+        />
+      </Modal>
+
+      <Modal open={planOpen} onClose={() => setPlanOpen(false)} title="Add an installment plan">
+        <PlanForm
+          methods={methods}
+          onCancel={() => setPlanOpen(false)}
+          onSubmit={async (input) => {
+            const { error } = await addPlan(input)
+            if (error) throw error
+            setPlanOpen(false)
+          }}
+        />
+      </Modal>
     </>
   )
 }

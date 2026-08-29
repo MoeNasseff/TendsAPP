@@ -298,6 +298,56 @@ export interface InstallmentPayment {
   created_at: string
 }
 
+export type RecurringBillKind =
+  | 'utility'
+  | 'subscription'
+  | 'service'
+  | 'rent'
+  | 'insurance'
+  | 'loan'
+  | 'other'
+export type IntervalUnit = 'week' | 'month' | 'quarter' | 'year'
+export type RecurringBillPaymentStatus = 'scheduled' | 'paid' | 'late' | 'skipped'
+
+/**
+ * A commitment that recurs — electricity, internet, the gardener, rent.
+ * `amount` is null for a variable bill (electricity, water): storing a made-up
+ * "typical" figure would put a fabricated number on the dashboard, so the UI
+ * asks for the real one at pay time instead.
+ */
+export interface RecurringBill {
+  id: string
+  user_id: string
+  name: string
+  kind: RecurringBillKind
+  merchant_id: string | null
+  category_id: string | null
+  payment_method_id: string | null
+  amount: number | null
+  is_variable: boolean
+  currency: string
+  interval_unit: IntervalUnit
+  interval_count: number
+  next_due_on: string
+  active: boolean
+  auto_pay: boolean
+  note: string | null
+  created_at: string
+}
+
+export interface RecurringBillPayment {
+  id: string
+  user_id: string
+  bill_id: string
+  expense_id: string | null
+  due_on: string
+  amount: number | null
+  paid_on: string | null
+  paid_amount: number | null
+  status: RecurringBillPaymentStatus
+  created_at: string
+}
+
 export interface PriceObservation {
   id: string
   user_id: string
