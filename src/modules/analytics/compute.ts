@@ -1,14 +1,26 @@
-import type { Expense, ExpenseCategory, Merchant, PriceObservation, Product, Receipt } from '../../lib/types'
+import type {
+  Expense,
+  ExpenseCategory,
+  Merchant,
+  PriceObservation,
+  Product,
+  Receipt,
+  ReceiptItem,
+} from '../../lib/types'
 import type {
   AnalyticsResult,
   CategoryRollup,
   DateRange,
   HighLowSpendDays,
+  ItemCategoryRollup,
+  ItemCoverage,
+  ItemRollup,
   MerchantRollup,
   PeriodDelta,
   PeriodTotals,
   ProductMatchConfidence,
   ProductPriceChange,
+  RecentPurchase,
   RecurringCandidate,
   SpendDay,
 } from './types'
@@ -170,6 +182,12 @@ export function computeCategoryRollups(
     return { status: 'insufficient_data', reason: 'total spend in range is zero; percentage share is undefined' }
   }
 
+  // Every expense uncategorised is not a finding — it means categorisation has
+  // never happened. "100% Uncategorized" dresses an absence up as a result.
+  if (rows.every((e) => e.category_id === null)) {
+    return { status: 'insufficient_data', reason: 'no expense in range has been categorised yet' }
+  }
+
   const categoryById = new Map(categories.map((c) => [c.id, c]))
   const byCategory = new Map<string, { total: number; count: number }>()
   for (const e of rows) {
@@ -327,6 +345,202 @@ export function computeRecurringCandidates(
 
   candidates.sort((a, b) => b.occurrences - a.occurrences)
   return { status: 'ok', candidates }
+}
+
+/* ─────────────────────── Item level ───────────────────────
+ * `receipt_items` carries no date of its own. Every function below resolves
+ * one through the parent receipt's `issued_at`, falling back to the linked
+ * expense's `spent_at`. An item whose receipt resolves to neither is dropped
+ * rather than dated to today — a purchase with no knowable date must not
+ * silently land in the current month.
+ */
+
+interface EnrichedItem {
+  item: ReceiptItem
+  date: string | null
+  merchantName: string | null
+  expenseId: string | null
+}
+
+function enrichItems(
+  items: ReceiptItem[],
+  receipts: Receipt[],
+  expenses: Expense[],
+  merchants: Merchant[],
+): EnrichedItem[] {
+  const receiptById = new Map(receipts.map((r) => [r.id, r]))
+  const expenseById = new Map(expenses.map((e) => [e.id, e]))
+  const merchantById = new Map(merchants.map((m) => [m.id, m]))
+
+  return items.map((item) => {
+    const receipt = receiptById.get(item.receipt_id)
+    const expense = receipt ? expenseById.get(receipt.expense_id) : undefined
+    return {
+      item,
+      date: receipt?.issued_at ?? expense?.spent_at ?? null,
+      merchantName: receipt?.merchant_id ? (merchantById.get(receipt.merchant_id)?.name ?? null) : null,
+      expenseId: receipt?.expense_id ?? null,
+    }
+  })
+}
+
+function inRange(date: string | null, range: DateRange): boolean {
+  return date !== null && date >= range.from && date <= range.to
+}
+
+/** Line total, falling back to quantity × unit price when the receipt stated
+ *  only the parts. Null when neither is knowable — never coerced to 0. */
+function itemAmount(item: ReceiptItem): number | null {
+  if (item.line_total !== null) return Number(item.line_total)
+  if (item.unit_price !== null) return Number(item.unit_price) * Number(item.quantity ?? 1)
+  return null
+}
+
+export function computeItemRollups(
+  items: ReceiptItem[],
+  receipts: Receipt[],
+  expenses: Expense[],
+  merchants: Merchant[],
+  range: DateRange,
+): AnalyticsResult<{ rollups: ItemRollup[] }> {
+  const rows = enrichItems(items, receipts, expenses, merchants).filter((r) => inRange(r.date, range))
+  if (rows.length === 0) return { status: 'insufficient_data', reason: 'no itemised receipts in range' }
+
+  const byLabel = new Map<string, { total: number; count: number }>()
+  let itemisedTotal = 0
+  for (const row of rows) {
+    const amount = itemAmount(row.item)
+    if (amount === null) continue
+    itemisedTotal += amount
+    const key = row.item.label
+    const bucket = byLabel.get(key) ?? { total: 0, count: 0 }
+    bucket.total += amount
+    bucket.count += 1
+    byLabel.set(key, bucket)
+  }
+
+  if (itemisedTotal === 0) {
+    return { status: 'insufficient_data', reason: 'itemised spend in range is zero; percentage share is undefined' }
+  }
+
+  const rollups: ItemRollup[] = Array.from(byLabel, ([label, { total, count }]) => ({
+    label,
+    total,
+    percentage: (total / itemisedTotal) * 100,
+    count,
+  })).sort((a, b) => b.total - a.total)
+
+  return { status: 'ok', rollups }
+}
+
+export function computeItemCategoryRollups(
+  items: ReceiptItem[],
+  receipts: Receipt[],
+  expenses: Expense[],
+  merchants: Merchant[],
+  categories: ExpenseCategory[],
+  range: DateRange,
+): AnalyticsResult<{ rollups: ItemCategoryRollup[] }> {
+  const rows = enrichItems(items, receipts, expenses, merchants).filter((r) => inRange(r.date, range))
+  if (rows.length === 0) return { status: 'insufficient_data', reason: 'no itemised receipts in range' }
+
+  // Every item uncategorised is not a finding — it means categorisation has
+  // never run. Reporting "100% Uncategorized" would dress that up as a result.
+  if (rows.every((r) => r.item.category_id === null)) {
+    return { status: 'insufficient_data', reason: 'no line item in range has been categorised yet' }
+  }
+
+  const categoryById = new Map(categories.map((c) => [c.id, c]))
+  const byCategory = new Map<string, { total: number; count: number }>()
+  let total = 0
+  for (const row of rows) {
+    const amount = itemAmount(row.item)
+    if (amount === null) continue
+    total += amount
+    const key = row.item.category_id ?? 'uncategorized'
+    const bucket = byCategory.get(key) ?? { total: 0, count: 0 }
+    bucket.total += amount
+    bucket.count += 1
+    byCategory.set(key, bucket)
+  }
+
+  if (total === 0) {
+    return { status: 'insufficient_data', reason: 'itemised spend in range is zero; percentage share is undefined' }
+  }
+
+  const rollups: ItemCategoryRollup[] = Array.from(byCategory, ([key, { total: t, count }]) => ({
+    categoryId: key === 'uncategorized' ? null : key,
+    categoryName: key === 'uncategorized' ? 'Uncategorized' : (categoryById.get(key)?.name ?? 'Unknown'),
+    total: t,
+    percentage: (t / total) * 100,
+    count,
+  })).sort((a, b) => b.total - a.total)
+
+  return { status: 'ok', rollups }
+}
+
+/**
+ * How much of the range's spend is itemised. Always `ok` when any expense
+ * exists — this is a completeness measure, and "nothing is itemised" is a
+ * meaningful, renderable answer rather than missing data.
+ */
+export function computeItemCoverage(
+  items: ReceiptItem[],
+  receipts: Receipt[],
+  expenses: Expense[],
+  merchants: Merchant[],
+  range: DateRange,
+): AnalyticsResult<ItemCoverage> {
+  const expenseRows = filterByRange(expenses, range)
+  if (expenseRows.length === 0) return { status: 'insufficient_data', reason: 'no expenses recorded in range' }
+
+  const rows = enrichItems(items, receipts, expenses, merchants).filter((r) => inRange(r.date, range))
+  const itemisedTotal = rows.reduce((s, r) => s + (itemAmount(r.item) ?? 0), 0)
+  const expenseIds = new Set(expenseRows.map((e) => e.id))
+  const receiptsInRange = receipts.filter((r) => expenseIds.has(r.expense_id))
+  const receiptIdsWithItems = new Set(rows.map((r) => r.item.receipt_id))
+
+  return {
+    status: 'ok',
+    itemisedTotal,
+    expenseTotal: expenseRows.reduce((s, e) => s + Number(e.amount), 0),
+    receiptsWithItems: receiptsInRange.filter((r) => receiptIdsWithItems.has(r.id)).length,
+    receiptsTotal: receiptsInRange.length,
+  }
+}
+
+export function computeRecentPurchases(
+  items: ReceiptItem[],
+  receipts: Receipt[],
+  expenses: Expense[],
+  merchants: Merchant[],
+  categories: ExpenseCategory[],
+  limit = 10,
+): AnalyticsResult<{ purchases: RecentPurchase[] }> {
+  const rows = enrichItems(items, receipts, expenses, merchants).filter((r) => r.date !== null)
+  if (rows.length === 0) return { status: 'insufficient_data', reason: 'no itemised receipts recorded yet' }
+
+  const categoryById = new Map(categories.map((c) => [c.id, c]))
+  const receiptById = new Map(receipts.map((r) => [r.id, r]))
+
+  const purchases: RecentPurchase[] = rows
+    .map((row) => ({
+      id: row.item.id,
+      label: row.item.label,
+      merchantName: row.merchantName,
+      categoryId: row.item.category_id,
+      categoryName: row.item.category_id ? (categoryById.get(row.item.category_id)?.name ?? null) : null,
+      lineTotal: itemAmount(row.item) ?? 0,
+      currency: receiptById.get(row.item.receipt_id)?.currency ?? 'EGP',
+      date: row.date as string,
+      expenseId: row.expenseId,
+    }))
+    // Newest first; `position` breaks ties so a receipt's own lines keep the
+    // order they were printed in rather than an arbitrary one.
+    .sort((a, b) => b.date.localeCompare(a.date) || (a.label > b.label ? 1 : -1))
+    .slice(0, limit)
+
+  return { status: 'ok', purchases }
 }
 
 export function computeProductPriceChanges(

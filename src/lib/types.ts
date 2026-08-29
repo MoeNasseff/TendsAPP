@@ -238,6 +238,66 @@ export interface ReceiptItem {
   created_at: string
 }
 
+export type PaymentMethodKind = 'bnpl' | 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer'
+export type CardNetwork = 'visa' | 'mastercard' | 'meeza' | 'amex'
+export type InstallmentPlanStatus = 'active' | 'completed' | 'cancelled' | 'late'
+export type InstallmentPaymentStatus = 'scheduled' | 'paid' | 'late' | 'skipped'
+
+/**
+ * A funding source — a BNPL account or a bank card. There is deliberately no
+ * field for a full card number, CVV or PIN; see 20260826120000_installments.sql.
+ * `credit_limit` is null when the user has not recorded one, which is not the
+ * same as a limit of zero and must never be rendered as 0% utilisation.
+ */
+export interface PaymentMethod {
+  id: string
+  user_id: string
+  kind: PaymentMethodKind
+  provider_slug: string | null
+  label: string
+  network: CardNetwork | null
+  issuer: string | null
+  last4: string | null
+  credit_limit: number | null
+  currency: string
+  statement_day: number | null
+  due_day: number | null
+  active: boolean
+  created_at: string
+}
+
+export interface InstallmentPlan {
+  id: string
+  user_id: string
+  payment_method_id: string
+  expense_id: string | null
+  receipt_id: string | null
+  merchant_id: string | null
+  description: string
+  principal: number
+  fees: number
+  total_payable: number
+  months: number
+  monthly_amount: number
+  started_on: string
+  first_due_on: string
+  status: InstallmentPlanStatus
+  created_at: string
+}
+
+export interface InstallmentPayment {
+  id: string
+  user_id: string
+  plan_id: string
+  seq: number
+  due_on: string
+  amount: number
+  paid_on: string | null
+  paid_amount: number | null
+  status: InstallmentPaymentStatus
+  created_at: string
+}
+
 export interface PriceObservation {
   id: string
   user_id: string

@@ -2,13 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useRealtime } from '../../hooks/useRealtime'
-import type { Expense, ExpenseCategory, Merchant, PriceObservation, Product, Receipt } from '../../lib/types'
+import type {
+  Expense,
+  ExpenseCategory,
+  Merchant,
+  PriceObservation,
+  Product,
+  Receipt,
+  ReceiptItem,
+} from '../../lib/types'
 import {
   computeCategoryRollups,
   computeHighLowSpendDays,
+  computeItemCategoryRollups,
+  computeItemCoverage,
+  computeItemRollups,
   computeMerchantRollups,
   computeMonthOverMonthDelta,
   computeProductPriceChanges,
+  computeRecentPurchases,
   computeRecurringCandidates,
   computeTotals,
   computeWeekOverWeekDelta,
@@ -19,10 +31,14 @@ import type {
   CategoryRollup,
   DateRange,
   HighLowSpendDays,
+  ItemCategoryRollup,
+  ItemCoverage,
+  ItemRollup,
   MerchantRollup,
   PeriodDelta,
   PeriodTotals,
   ProductPriceChange,
+  RecentPurchase,
   RecurringCandidate,
 } from './types'
 
@@ -34,17 +50,19 @@ export function useAnalytics() {
   const [merchants, setMerchants] = useState<Merchant[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [priceObservations, setPriceObservations] = useState<PriceObservation[]>([])
+  const [receiptItems, setReceiptItems] = useState<ReceiptItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     if (!user) return
-    const [expRes, catRes, receiptRes, merchantRes, productRes, priceRes] = await Promise.all([
+    const [expRes, catRes, receiptRes, merchantRes, productRes, priceRes, itemRes] = await Promise.all([
       supabase.from('expenses').select('*').order('spent_at', { ascending: false }),
       supabase.from('expense_categories').select('*').order('name'),
       supabase.from('receipts').select('*'),
       supabase.from('merchants').select('*'),
       supabase.from('products').select('*'),
       supabase.from('price_observations').select('*').order('observed_at', { ascending: true }),
+      supabase.from('receipt_items').select('*').order('position', { ascending: true }),
     ])
     setExpenses(expRes.data ?? [])
     setCategories(catRes.data ?? [])
@@ -52,6 +70,7 @@ export function useAnalytics() {
     setMerchants(merchantRes.data ?? [])
     setProducts(productRes.data ?? [])
     setPriceObservations(priceRes.data ?? [])
+    setReceiptItems(itemRes.data ?? [])
     setLoading(false)
   }, [user])
 
@@ -65,6 +84,7 @@ export function useAnalytics() {
   useRealtime('merchants', load)
   useRealtime('products', load)
   useRealtime('price_observations', load)
+  useRealtime('receipt_items', load)
 
   const thisMonth = useMemo(() => monthRangeFor(new Date()), [])
 
@@ -99,6 +119,26 @@ export function useAnalytics() {
     [priceObservations, products],
   )
 
+  const itemRollups = useMemo<AnalyticsResult<{ rollups: ItemRollup[] }>>(
+    () => computeItemRollups(receiptItems, receipts, expenses, merchants, thisMonth),
+    [receiptItems, receipts, expenses, merchants, thisMonth],
+  )
+
+  const itemCategoryRollups = useMemo<AnalyticsResult<{ rollups: ItemCategoryRollup[] }>>(
+    () => computeItemCategoryRollups(receiptItems, receipts, expenses, merchants, categories, thisMonth),
+    [receiptItems, receipts, expenses, merchants, categories, thisMonth],
+  )
+
+  const itemCoverage = useMemo<AnalyticsResult<ItemCoverage>>(
+    () => computeItemCoverage(receiptItems, receipts, expenses, merchants, thisMonth),
+    [receiptItems, receipts, expenses, merchants, thisMonth],
+  )
+
+  const recentPurchases = useMemo<AnalyticsResult<{ purchases: RecentPurchase[] }>>(
+    () => computeRecentPurchases(receiptItems, receipts, expenses, merchants, categories, 10),
+    [receiptItems, receipts, expenses, merchants, categories],
+  )
+
   // Lets a consumer (e.g. a date-range picker) ask for the same rollups over
   // an arbitrary window without re-deriving the fetch/join logic itself.
   const computeForRange = useCallback(
@@ -119,6 +159,7 @@ export function useAnalytics() {
     merchants,
     products,
     priceObservations,
+    receiptItems,
     totals,
     highLowSpendDays,
     categoryRollups,
@@ -127,6 +168,10 @@ export function useAnalytics() {
     weekOverWeek,
     recurringCandidates,
     productPriceChanges,
+    itemRollups,
+    itemCategoryRollups,
+    itemCoverage,
+    recentPurchases,
     computeForRange,
   }
 }

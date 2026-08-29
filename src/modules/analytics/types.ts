@@ -103,6 +103,49 @@ export interface RecurringCandidate {
  */
 export type ProductMatchConfidence = 'exact' | 'possible'
 
+export interface ItemRollup {
+  /** `receipt_items.label` — the line as the receipt worded it. */
+  label: string
+  total: number
+  /** Share of the range's *itemised* spend, 0-100 — not of total spend. */
+  percentage: number
+  count: number
+}
+
+export interface ItemCategoryRollup {
+  categoryId: string | null
+  categoryName: string
+  total: number
+  percentage: number
+  count: number
+}
+
+/**
+ * How much of a range's spend is actually broken down into line items.
+ * Item totals are almost always lower than expense totals — a receipt saved
+ * without lines still has an expense. Callers must render this rather than
+ * letting the two totals sit side by side implying they should reconcile.
+ */
+export interface ItemCoverage {
+  itemisedTotal: number
+  expenseTotal: number
+  receiptsWithItems: number
+  receiptsTotal: number
+}
+
+export interface RecentPurchase {
+  id: string
+  label: string
+  merchantName: string | null
+  categoryId: string | null
+  categoryName: string | null
+  lineTotal: number
+  currency: string
+  /** From the parent receipt's issued_at, else the linked expense's spent_at. */
+  date: string
+  expenseId: string | null
+}
+
 export interface ProductPriceChange {
   productId: string
   productName: string

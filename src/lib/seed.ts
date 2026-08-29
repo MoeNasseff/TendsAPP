@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { CHART_SERIES } from './chartTheme'
 
 const DAY = 86_400_000
 
@@ -101,7 +102,30 @@ export async function seedDefaults(userId: string) {
   }
 }
 
+/**
+ * Default expense categories. Their absence is why the analytics category
+ * rollup could only ever report "100% Uncategorized" — no seeder had ever
+ * created a category row, so `expenses.category_id` had nothing to point at.
+ * Colours are CHART_SERIES order, so a category keeps one identity across the
+ * donut, the bars and the table.
+ */
+const DEFAULT_CATEGORIES = [
+  { name: 'Groceries', icon: 'shopping-cart' },
+  { name: 'Fuel', icon: 'fuel' },
+  { name: 'Pharmacy', icon: 'pill' },
+  { name: 'Utilities', icon: 'zap' },
+  { name: 'Dining', icon: 'utensils' },
+  { name: 'Transport', icon: 'car' },
+  { name: 'Household', icon: 'house' },
+  { name: 'Other', icon: 'package' },
+].map((c, i) => ({ ...c, color: CHART_SERIES[i % CHART_SERIES.length] }))
+
 async function seedRows(userId: string) {
+  const { error: categoryError } = await supabase
+    .from('expense_categories')
+    .insert(DEFAULT_CATEGORIES.map((c) => ({ user_id: userId, ...c })))
+  if (categoryError) throw categoryError
+
   const { data: dog, error: dogError } = await supabase
     .from('dogs')
     .insert({ user_id: userId, name: 'Bernese', breed: 'Bernese Mountain Dog' })
