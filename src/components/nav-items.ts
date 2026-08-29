@@ -141,7 +141,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { name: 'Image Generator', path: '/image-generator' },
           { name: 'Code Generator', path: '/code-generator' },
           { name: 'Video Generator', path: '/video-generator' },
-          { name: 'AI Settings', path: '/ai-settings' },
+          { name: 'AI Settings', path: '/api-keys' },
         ],
       },
       {

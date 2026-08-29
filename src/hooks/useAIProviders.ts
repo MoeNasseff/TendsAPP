@@ -25,7 +25,7 @@ import type { AICapability, AIProvider, AIProviderConfig, AIResolution } from '.
 export const AI_PROVIDERS: readonly AIProvider[] = [geminiProvider]
 
 /** Columns the authenticated role is allowed to read. */
-const SELECT_COLUMNS = 'id, provider, model, has_key, enabled, created_at'
+const SELECT_COLUMNS = 'id, provider, model, has_key, enabled, created_at, last_used_at'
 
 interface ConfigRow {
   id: string
@@ -34,6 +34,7 @@ interface ConfigRow {
   has_key: boolean
   enabled: boolean
   created_at: string
+  last_used_at: string | null
 }
 
 export interface ProviderState extends AIProviderConfig {
@@ -47,6 +48,8 @@ const emptyState = (provider: string): ProviderState => ({
   model: null,
   hasKey: false,
   enabled: false,
+  createdAt: '',
+  lastUsedAt: null,
 })
 
 export type TestResult = { ok: true } | { ok: false; reason: string }
@@ -76,6 +79,8 @@ export function useAIProviders() {
           model: row.model,
           hasKey: row.has_key,
           enabled: row.enabled,
+          createdAt: row.created_at,
+          lastUsedAt: row.last_used_at,
         }
       }),
     )
@@ -99,16 +104,29 @@ export function useAIProviders() {
       setStates((prev) =>
         prev.map((s) => (s.provider === provider ? { ...s, hasKey: true, enabled: true } : s)),
       )
-      const { error } = await supabase.from('ai_provider_configs').upsert(
-        {
-          user_id: user.id,
-          provider,
-          api_key: apiKey,
-          model: model ?? null,
-          enabled: true,
-        },
-        { onConflict: 'user_id,provider' },
-      )
+      // Plain insert, falling back to update on conflict -- not `.upsert()`.
+      // Postgres's `ON CONFLICT DO UPDATE` needs SELECT on every column
+      // referenced via `excluded.*`, including `api_key`, which is
+      // deliberately never granted to `authenticated` (see
+      // 20260816000002_ai_provider_configs.sql). That combination makes a
+      // single upsert call permission-denied by construction; this two-step
+      // form never references `excluded` and works under the same grants.
+      const { error: insertError } = await supabase.from('ai_provider_configs').insert({
+        user_id: user.id,
+        provider,
+        api_key: apiKey,
+        model: model ?? null,
+        enabled: true,
+      })
+      let error = insertError
+      if (insertError?.code === '23505') {
+        const { error: updateError } = await supabase
+          .from('ai_provider_configs')
+          .update({ api_key: apiKey, model: model ?? null, enabled: true })
+          .eq('user_id', user.id)
+          .eq('provider', provider)
+        error = updateError
+      }
       if (error) setStates(previous)
       else await load()
       return { error }

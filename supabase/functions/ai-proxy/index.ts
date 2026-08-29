@@ -90,12 +90,15 @@ Deno.serve(async (req: Request) => {
 
   // ---- 3. Resolve the key. ---------------------------------------------
   let apiKey: string | null = null
+  // Hoisted so step 5 can stamp `last_used_at` on the same client after a
+  // successful call, without re-authenticating as service_role twice.
+  let admin: ReturnType<typeof createClient> | null = null
 
   if (keySource === 'byok') {
     // service_role is the only role that can select `api_key` -- see
     // 20260816000002_ai_provider_configs.sql. Scoped to the id from the
     // verified JWT above, never to anything the caller sent.
-    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const { data: config } = await admin
       .from('ai_provider_configs')
       .select('api_key, model')
@@ -145,6 +148,22 @@ Deno.serve(async (req: Request) => {
   } catch {
     console.error('ai-proxy: upstream returned non-JSON')
     return json({ error: 'provider_error' }, 502)
+  }
+
+  // ---- 5. Record usage. --------------------------------------------------
+  // BYOK only -- the managed path has no per-user config row to stamp. A
+  // failure here must never turn an otherwise-successful AI response into
+  // an error for the caller.
+  if (keySource === 'byok' && admin) {
+    try {
+      await admin
+        .from('ai_provider_configs')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('provider', provider)
+    } catch {
+      console.error('ai-proxy: last_used_at stamp failed')
+    }
   }
 
   return json(result, 200)

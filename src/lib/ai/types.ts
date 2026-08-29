@@ -20,6 +20,9 @@ export interface AIProviderConfig {
   provider: string
   hasKey: boolean
   enabled: boolean
+  createdAt: string
+  /** Null until the proxy's first successful BYOK call for this row. */
+  lastUsedAt: string | null
 }
 
 export type AIResolution =

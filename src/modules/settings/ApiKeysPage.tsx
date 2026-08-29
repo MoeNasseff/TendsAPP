@@ -37,10 +37,23 @@ const KEY_INPUT =
   'dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full min-w-[360px] rounded-lg border border-gray-300 bg-transparent py-3 pr-[90px] pl-4 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30'
 
 export function ApiKeysPage() {
-  const { providers, states, loading, saveKey, setEnabled, removeKey } = useAIProviders()
+  const {
+    providers,
+    states,
+    loading,
+    testing,
+    saveKey,
+    setEnabled,
+    removeKey,
+    testConnection,
+    resolutionFor,
+  } = useAIProviders()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [draftProvider, setDraftProvider] = useState(providers[0]?.id ?? '')
   const [draftKey, setDraftKey] = useState('')
+  const [draftError, setDraftError] = useState<string | null>(null)
+  const [testNotes, setTestNotes] = useState<Record<string, string>>({})
+  const visionResolution = resolutionFor('vision')
 
   return (
     <>
@@ -53,6 +66,14 @@ export function ApiKeysPage() {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">API Keys</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 API keys let Tend send your scans to an AI provider for extraction
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {visionResolution.status === 'byok' &&
+                  `Scans currently use your ${visionResolution.provider.label} key.`}
+                {visionResolution.status === 'managed' &&
+                  `Scans currently use Tend's shared ${visionResolution.provider.label} key.`}
+                {visionResolution.status === 'unavailable' &&
+                  'AI is unavailable right now — manual entry still works.'}
               </p>
             </div>
             <div>
@@ -107,7 +128,12 @@ export function ApiKeysPage() {
                           onSubmit={async (e) => {
                             e.preventDefault()
                             if (!draftKey.trim()) return
-                            await saveKey(draftProvider, draftKey.trim())
+                            setDraftError(null)
+                            const { error } = await saveKey(draftProvider, draftKey.trim())
+                            if (error) {
+                              setDraftError(error.message)
+                              return
+                            }
                             setDraftKey('')
                             setIsModalOpen(false)
                           }}
@@ -143,6 +169,9 @@ export function ApiKeysPage() {
                             Without a key, Tend falls back to the shared managed key, and scanning
                             still works. Manual entry always works.
                           </p>
+                          {draftError && (
+                            <p className="text-error-600 dark:text-error-500 mt-2 text-sm">{draftError}</p>
+                          )}
                           <div className="mt-8 flex w-full items-center justify-between gap-3">
                             <button
                               onClick={() => setIsModalOpen(false)}
@@ -263,6 +292,28 @@ export function ApiKeysPage() {
                                 </div>
                               </div>
                             </div>
+
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={!configured || testing === provider.id}
+                                onClick={async () => {
+                                  const result = await testConnection(provider.id)
+                                  setTestNotes((n) => ({
+                                    ...n,
+                                    [provider.id]: result.ok ? 'Connection works.' : result.reason,
+                                  }))
+                                }}
+                                className="shadow-theme-xs rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+                              >
+                                {testing === provider.id ? 'Testing…' : 'Test connection'}
+                              </button>
+                              {testNotes[provider.id] && (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {testNotes[provider.id]}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className={CELL}>
@@ -277,10 +328,10 @@ export function ApiKeysPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-                          {configured ? formatDate(new Date().toISOString()) : '—'}
+                          {configured && state?.createdAt ? formatDate(state.createdAt) : '—'}
                         </td>
                         <td className="px-5 py-3 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400">
-                          —
+                          {state?.lastUsedAt ? formatDate(state.lastUsedAt) : '—'}
                         </td>
                         <td className={CELL}>
                           <label htmlFor={`toggle-${provider.id}`} className="cursor-pointer">
