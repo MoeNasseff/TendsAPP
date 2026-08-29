@@ -14,9 +14,16 @@
 import { callFunction } from '../supabase'
 import type { AIProvider, AIResolution } from './types'
 
-/** Flash tier: fast and free-tier eligible, and vision-capable. The model
- * is a parameter everywhere, so switching is a one-line change. */
-export const GEMINI_DEFAULT_MODEL = 'gemini-3.7-flash'
+/** Flash tier: fast, vision-capable, and actually usable on the free tier.
+ * The model is a parameter everywhere, so switching is a one-line change.
+ *
+ * Was `gemini-3.7-flash`, which is not free-tier eligible in any useful way:
+ * every call returned 429 with "limit: 20" on a key that had made almost no
+ * requests. Google reports plan ineligibility as a quota error rather than a
+ * plan error, so it reads as "you used your allowance" when the allowance was
+ * never really there. Verified 2026-08-29: same key, 3.7 → 429, 3.6 → 200.
+ * Keep this in sync with DEFAULT_MODEL in supabase/functions/ai-proxy. */
+export const GEMINI_DEFAULT_MODEL = 'gemini-3.6-flash'
 
 export const geminiProvider: AIProvider = {
   id: 'gemini',

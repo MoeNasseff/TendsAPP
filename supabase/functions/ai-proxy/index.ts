@@ -16,7 +16,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/interactions'
-const DEFAULT_MODEL = 'gemini-3.7-flash'
+// Keep in sync with GEMINI_DEFAULT_MODEL in src/lib/ai/gemini.ts. Was
+// gemini-3.7-flash, which returns 429 "limit: 20" on a free-tier key that has
+// barely been used — it is not free-tier eligible, and Google surfaces that as
+// a quota error rather than a plan error.
+const DEFAULT_MODEL = 'gemini-3.6-flash'
 const ALLOWED_PROVIDERS = new Set(['gemini'])
 // Gemini caps a request carrying inline image data at 20MB; stay under it.
 const MAX_BODY_BYTES = 15 * 1024 * 1024
