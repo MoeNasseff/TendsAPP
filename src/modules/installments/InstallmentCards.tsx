@@ -19,26 +19,39 @@ const CARD = 'rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-8
 const CARD_TITLE = 'mb-1 text-lg font-semibold text-gray-800 dark:text-white/90'
 const CARD_SUB = 'block text-gray-500 text-theme-sm dark:text-gray-400'
 
-/** Brand tile: the provider's logo if one has been placed in public/brands,
- *  otherwise a monogram on the brand colour. No logo ships with the app, so
- *  the monogram is the normal state and is styled to look intentional. */
+/**
+ * Brand tile. Renders the provider's supplied logo from `public/brand/` when
+ * one exists, otherwise a monogram on the brand colour — a provider with no
+ * artwork is a normal state, not a broken image.
+ *
+ * `logoFit` matters because the supplied files are not uniform: Sympl, CIB and
+ * FAB Misr are square app icons carrying their own background and fill the
+ * tile edge to edge, while ValU is a wide teal wordmark on white and is
+ * letterboxed on its own white background instead.
+ */
 function ProviderMark({ slug, label, size = 40 }: { slug: string | null; label: string; size?: number }) {
   const provider = providerFor(slug)
-  const brand = provider?.brand ?? NEUTRAL_BRAND
+  const src = logoPath(provider)
   const [logoFailed, setLogoFailed] = useState(false)
-  const showLogo = slug !== null && !logoFailed
+  const showLogo = src !== null && !logoFailed
+  const cover = provider?.logoFit !== 'contain'
 
   return (
     <div
       className="flex shrink-0 items-center justify-center overflow-hidden rounded-lg font-semibold text-white"
-      style={{ background: brand, width: size, height: size, fontSize: size * 0.36 }}
+      style={{
+        background: showLogo ? (provider?.logoBg ?? 'transparent') : (provider?.brand ?? NEUTRAL_BRAND),
+        width: size,
+        height: size,
+        fontSize: size * 0.36,
+      }}
       aria-hidden="true"
     >
       {showLogo ? (
         <img
-          src={logoPath(slug)}
+          src={src}
           alt=""
-          className="h-full w-full object-contain p-1.5"
+          className={cover ? 'h-full w-full object-cover' : 'h-full w-full object-contain p-1'}
           onError={() => setLogoFailed(true)}
         />
       ) : (

@@ -3,33 +3,46 @@ import type { PaymentMethodKind } from '../../lib/types'
 /**
  * Known funding providers, for display only.
  *
- * LOGOS: ValU, Sympl and every bank named here are third-party trademarks.
- * No logo file is bundled with this app. Each entry carries a brand colour and
- * a slug; `logoPath` points at `/brands/<slug>.svg`, which is absent by
- * default, and the UI falls back to a monogram tile. If those files are ever
- * added, that is a deliberate act by whoever has satisfied themselves they may
- * use the marks — it is not something this module does on its own.
+ * LOGOS: ValU, Sympl, CIB and FAB Misr are third-party trademarks. The files
+ * under `public/brand/` were supplied by the app's owner, who is responsible
+ * for having the right to use them; nothing here fetches or bundles a mark on
+ * its own. A provider with no `logo` renders a monogram tile instead, which is
+ * a first-class state rather than a broken image.
  *
- * Brand colours below are approximations chosen for legibility against both
- * themes, not sampled from any brand guideline.
+ * The artwork is not uniform, so each entry declares how to fit it:
+ *   'cover'   — square app-icon art that already carries its own background
+ *               (Sympl, CIB, FAB Misr). Fills the tile edge to edge.
+ *   'contain' — a wide wordmark on its own flat background (ValU, teal on
+ *               white). Letterboxed on `logoBg` so the artwork's background
+ *               and the tile's agree instead of showing a white rectangle
+ *               floating on a coloured square.
+ *
+ * `brand` is only used for the monogram fallback and is an approximation
+ * chosen for legibility in both themes, not a sampled brand value.
  */
 
 export interface Provider {
   slug: string
   label: string
   kind: PaymentMethodKind
-  /** Tile background. Monogram text is always white on top of it. */
+  /** Monogram tile background. Text on it is always white. */
   brand: string
+  /** Filename under `public/brand/`. Omitted ⇒ monogram. */
+  logo?: string
+  logoFit?: 'cover' | 'contain'
+  /** Tile background behind a 'contain' logo — match the artwork's own. */
+  logoBg?: string
 }
 
 export const PROVIDERS: readonly Provider[] = [
-  { slug: 'valu', label: 'ValU', kind: 'bnpl', brand: '#6d28d9' },
-  { slug: 'sympl', label: 'Sympl', kind: 'bnpl', brand: '#0f766e' },
+  { slug: 'valu', label: 'ValU', kind: 'bnpl', brand: '#0ea5a4', logo: 'valu.jpeg', logoFit: 'contain', logoBg: '#ffffff' },
+  { slug: 'sympl', label: 'Sympl', kind: 'bnpl', brand: '#f43f5e', logo: 'sympl.png', logoFit: 'cover' },
   { slug: 'aman', label: 'Aman', kind: 'bnpl', brand: '#b45309' },
   { slug: 'contact', label: 'Contact', kind: 'bnpl', brand: '#be123c' },
   { slug: 'forsa', label: 'Forsa', kind: 'bnpl', brand: '#1d4ed8' },
   { slug: 'halan', label: 'Halan', kind: 'bnpl', brand: '#c2410c' },
-  { slug: 'cib', label: 'CIB', kind: 'credit_card', brand: '#7c2d12' },
+  { slug: 'cib', label: 'CIB', kind: 'credit_card', brand: '#00539f', logo: 'CIB-bank.png', logoFit: 'cover' },
+  { slug: 'fab-misr', label: 'FAB Misr', kind: 'credit_card', brand: '#1b2a63', logo: 'FAB-bank.png', logoFit: 'cover' },
   { slug: 'nbe', label: 'NBE', kind: 'credit_card', brand: '#065f46' },
   { slug: 'banque-misr', label: 'Banque Misr', kind: 'credit_card', brand: '#9f1239' },
   { slug: 'qnb', label: 'QNB', kind: 'credit_card', brand: '#5b21b6' },
@@ -47,10 +60,10 @@ export function providersOfKind(kind: PaymentMethodKind): Provider[] {
   return PROVIDERS.filter((p) => p.kind === kind)
 }
 
-/** Path a logo *would* live at. The file is not shipped; callers must handle
- *  its absence, which is the normal case. */
-export function logoPath(slug: string): string {
-  return `/brands/${slug}.svg`
+/** Public URL of a provider's logo, or null when it has none and the caller
+ *  should fall back to the monogram. */
+export function logoPath(provider: Provider | null): string | null {
+  return provider?.logo ? `/brand/${provider.logo}` : null
 }
 
 /** Up to two letters, skipping articles, for the fallback tile. */
