@@ -53,6 +53,10 @@ function extractErrorMessage(reason: ExtractionFailureReason): string {
       return 'No AI provider is configured — enter this one manually, or add a key in Settings.'
     case 'byok_not_configured':
       return 'Your AI key isn’t set up yet — enter this one manually, or fix it in Settings.'
+    case 'rate_limited':
+      return 'Your AI key has hit its quota for now — enter this one manually, or try again later.'
+    case 'invalid_key':
+      return 'The AI provider rejected your key — check it in Settings, or enter this one manually.'
     case 'provider_error':
       return 'The AI provider couldn’t read this image — try again, or enter it manually.'
     case 'transport_error':

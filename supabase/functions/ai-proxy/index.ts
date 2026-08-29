@@ -139,6 +139,22 @@ Deno.serve(async (req: Request) => {
     // The upstream body is NOT forwarded and NOT logged. Provider error
     // payloads have historically echoed the key and the full request URL.
     console.error(`ai-proxy: ${provider} returned ${upstream.status}`)
+
+    // 429 is separated from the generic failure because the two need opposite
+    // actions from the user. Collapsing them told people with a perfectly
+    // valid key to "check the key" when they had simply exhausted the free
+    // tier's quota and needed to wait. Retry-After is the only upstream
+    // header forwarded, and it carries no account detail.
+    if (upstream.status === 429) {
+      const retryAfter = upstream.headers.get('retry-after')
+      return json({ error: 'rate_limited', ...(retryAfter ? { retry_after: retryAfter } : {}) }, 429)
+    }
+
+    // 401/403 is the case where the key genuinely is the problem.
+    if (upstream.status === 401 || upstream.status === 403) {
+      return json({ error: 'invalid_key' }, 502)
+    }
+
     return json({ error: 'provider_error', status: upstream.status }, 502)
   }
 

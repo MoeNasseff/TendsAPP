@@ -14,6 +14,10 @@ export interface CategoryOption {
 export type ExtractionFailureReason =
   | 'unavailable'
   | 'byok_not_configured'
+  /** Quota exhausted. The key is valid; waiting fixes it. */
+  | 'rate_limited'
+  /** The provider rejected the credential itself. */
+  | 'invalid_key'
   | 'provider_error'
   | 'transport_error'
   /** Model read the image fine but it isn't a purchase document. */

@@ -59,6 +59,12 @@ export type GeminiFailure =
   | 'unavailable'
   /** The user chose BYOK but has no usable key stored. */
   | 'byok_not_configured'
+  /** Quota or rate limit hit. The key is fine; waiting fixes it. Kept apart
+   * from provider_error because telling someone to check a working key sends
+   * them to debug the one thing that is not wrong. */
+  | 'rate_limited'
+  /** The provider rejected the credential itself (401/403). */
+  | 'invalid_key'
   /** Gemini itself refused or failed. Detail is deliberately not exposed. */
   | 'provider_error'
   /** The proxy could not be reached at all. */
@@ -104,7 +110,14 @@ export async function runGemini(
  * not want in the UI. */
 function failureFrom(data: unknown): GeminiFailure {
   const code = (data as { error?: unknown } | null)?.error
-  if (code === 'unavailable' || code === 'byok_not_configured') return code
+  if (
+    code === 'unavailable' ||
+    code === 'byok_not_configured' ||
+    code === 'rate_limited' ||
+    code === 'invalid_key'
+  ) {
+    return code
+  }
   return 'provider_error'
 }
 

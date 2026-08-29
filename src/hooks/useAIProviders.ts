@@ -195,7 +195,12 @@ export function useAIProviders() {
         const reasons: Record<string, string> = {
           unavailable: 'No provider is configured — add a key, or use manual entry.',
           byok_not_configured: 'No key stored for this provider yet.',
-          provider_error: 'The provider rejected the request. Check the key.',
+          // Deliberately does not mention the key: this outcome means the key
+          // authenticated and the quota ran out, so sending the user to check
+          // their credentials would point them at the one thing that works.
+          rate_limited: 'Your key works, but the provider’s quota is used up. Try again later.',
+          invalid_key: 'The provider rejected this key. Check that it is correct and still active.',
+          provider_error: 'The provider could not complete the request. Try again shortly.',
           transport_error: 'Could not reach the service. Check your connection.',
         }
         return { ok: false, reason: reasons[result.reason] ?? 'Test failed.' }
