@@ -236,9 +236,15 @@ export const NAV_GROUPS: NavGroup[] = [
       {
         name: 'Email',
         icon: MailIcon,
+        // Was /inbox + /inbox-details, a template placeholder pair that never
+        // built into a real page. Session 26 gave /inbox to a real feature
+        // (bank-text review), the same kind of collision the Dashboard →
+        // Ecommerce row hit against Tend's own '/' — same fix, moved off the
+        // claimed path rather than left to silently resolve to someone else's
+        // page.
         subItems: [
-          { name: 'Inbox', path: '/inbox' },
-          { name: 'Details', path: '/inbox-details' },
+          { name: 'Inbox', path: '/email-inbox' },
+          { name: 'Details', path: '/email-inbox-details' },
         ],
       },
     ],
