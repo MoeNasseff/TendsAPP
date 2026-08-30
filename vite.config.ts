@@ -22,7 +22,24 @@ export default defineConfig({
       filename: 'sw.ts',
       registerType: 'prompt',
       injectRegister: false,
-      devOptions: { enabled: true, type: 'module' },
+      // Off by default. A dev service worker takes control of the page via
+      // registerSW({ immediate: true }) in lib/pwa.ts, and once it is in the
+      // request path every lazy route import fails with
+      // `TypeError: Failed to fetch dynamically imported module` — which
+      // RouteError reads as isOffline and renders as the 503 maintenance page.
+      // First load is a blank screen, every navigation after is 503, and
+      // nothing is logged as an error. The registration is stored per origin,
+      // so it survives server restarts and outlives whatever build created it.
+      //
+      // Still needed to test PWA behaviour — subscribeToPush awaits
+      // navigator.serviceWorker.ready, which never resolves without a worker.
+      // Turn it on deliberately for that: `$env:VITE_DEV_SW=1; npm run dev`.
+      // Shell variable only — vite does not load .env into the config's own
+      // process.env, so putting it in .env will not work.
+      //
+      // If it has already been registered on an origin, this flag will not
+      // remove it: DevTools -> Application -> Clear site data, then reload.
+      devOptions: { enabled: !!process.env.VITE_DEV_SW, type: 'module' },
     }),
   ],
 })
