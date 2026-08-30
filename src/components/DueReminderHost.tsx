@@ -12,17 +12,24 @@ export function DueReminderHost() {
   if (dueReminders.length === 0) return null
 
   return (
-    // top-20 clears the header, which is 77px tall at lg and sits at
-    // z-99999 — well above this stack. At top-4 the first child (the
-    // "N reminders due / Dismiss all" bar) rendered entirely behind it and
-    // read as a missing button. 80px also clears the 64px mobile header.
-    <div className="fixed inset-x-0 top-20 z-[90] mx-auto flex w-full max-w-sm flex-col gap-2 px-4 sm:left-auto sm:right-4 sm:mx-0">
+    // sm:hidden — this stack is the mobile reminder surface only. Above sm the
+    // header's bell owns them, and it carries the same Done/Snooze/Dismiss all
+    // actions, so a second copy floating over the page is just noise. Paired
+    // with BottomNav's own sm:hidden so both mobile-only layers come and go
+    // together.
+    //
+    // top-20 (80px) clears the 64px mobile header, which sits at z-99999 —
+    // well above this stack. At top-4 the first child rendered entirely behind
+    // it and read as a missing button.
+    <div className="fixed inset-x-0 top-20 z-[90] mx-auto flex w-full max-w-sm flex-col gap-2 px-4 sm:hidden">
       {/* Deliberately not mood-coloured: this bar spans every module, so it
-          stays neutral and leans on weight/contrast to stand out instead. */}
-      {dueReminders.length > 1 && (
+          stays neutral and leans on weight/contrast to stand out instead.
+          Shown from one reminder, not two — gating it at > 1 meant the only
+          way to clear a single card was to act on it. */}
+      {dueReminders.length > 0 && (
         <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-theme-xl dark:border-white/10 dark:bg-gray-800 dark:shadow-none">
           <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-            {dueReminders.length} reminders due
+            {dueReminders.length} reminder{dueReminders.length === 1 ? '' : 's'} due
           </p>
           {/* Was white-on-white in light mode: text-slate-100 over the card's
               bg-white, with a white/10 fill and white/25 ring that had nothing

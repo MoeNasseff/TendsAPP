@@ -88,6 +88,16 @@ export function Header() {
             <img src={brand.logo.src} alt={brand.logo.alt} className="h-8 w-auto" />
           </Link>
 
+          {/* Below xl these live here, in the always-visible row, rather than
+              in element 3 — which is hidden until "…" is tapped. Their whole
+              job is the ping dot, and a dot you have to open a menu to see is
+              not a notification. The element-3 copies are `hidden xl:flex`, so
+              exactly one of the two is ever on screen at a given width. */}
+          <div className="flex items-center gap-2 xl:hidden">
+            <InboxDropdown />
+            <NotificationDropdown />
+          </div>
+
           <button
             type="button"
             onClick={() => setApplicationMenuOpen((v) => !v)}
@@ -175,18 +185,25 @@ export function Header() {
             {/* The hide-amounts toggle used to sit here. It now lives beside
                 the page title that owns the amounts — see PrivacyToggle. */}
 
-            {/* Pending bank texts, built the same way NotificationDropdown is
-                (same circle chrome, same ping dot) — kept as its own button
-                rather than merged into the bell's panel, so "what's due" and
-                "what needs review" stay visually distinct. /inbox is out of
-                the sidebar for now (see nav-items.ts); this is the way in. */}
-            <InboxDropdown />
+            {/* The xl+ home for both dropdowns, where TailAdmin puts them:
+                right-hand cluster, beside the avatar. Below xl this block is
+                behind the "…" toggle, so the copies in element 2 take over —
+                see the comment there.
 
-            {/* The bell, its ping dot and the panel it opens all live in
-                NotificationDropdown — TailAdmin's markup wrapped around real
-                due reminders, and the only place "Dismiss all" is reachable
-                from the header. */}
-            <NotificationDropdown />
+                InboxDropdown is pending bank texts, built the same way
+                NotificationDropdown is (same circle chrome, same ping dot) —
+                kept as its own button rather than merged into the bell's
+                panel, so "what's due" and "what needs review" stay visually
+                distinct. /inbox is out of the sidebar for now (see
+                nav-items.ts); this is the way in.
+
+                NotificationDropdown owns the bell, its ping dot and the panel,
+                and above sm it is the only reminder surface there is —
+                DueReminderHost's floating stack is sm:hidden. */}
+            <div className="hidden items-center gap-2 2xsm:gap-3 xl:flex">
+              <InboxDropdown />
+              <NotificationDropdown />
+            </div>
           </div>
 
           <UserAvatar />

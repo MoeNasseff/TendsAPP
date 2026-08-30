@@ -25,13 +25,17 @@ function timeAgo(iso: string) {
  * full-width "View All Notification" button.
  *
  * Ours: the rows are real due reminders rather than their hardcoded sample
- * users, and two buttons are added — "Dismiss all", which had been living in
- * DueReminderHost where it only appeared once two or more reminders were due,
- * and "Notification settings", which opens the existing push/Telegram panel.
- * The empty state is also ours; their markup assumes the list is never empty.
+ * users, each row carries Done / Snooze 10m / Snooze 1h, and two buttons are
+ * added — "Dismiss all" and "Notification settings", which opens the existing
+ * push/Telegram panel. The empty state is also ours; their markup assumes the
+ * list is never empty.
+ *
+ * This is the *complete* reminder surface, not a preview of one. Above sm it
+ * is the only one: DueReminderHost's floating stack is sm:hidden, so every
+ * action it offers has to exist here or a desktop user could only mass-cancel.
  */
 export function NotificationDropdown() {
-  const { dueReminders, dismissAll } = useDueReminders()
+  const { dueReminders, markDone, snooze, dismissAll } = useDueReminders()
   const [open, setOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -125,35 +129,63 @@ export function NotificationDropdown() {
               </li>
             ) : (
               dueReminders.map((r) => (
-                <li key={r.id} data-mood={MOOD_BY_MODULE[r.source_module]}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="flex w-full gap-3 rounded-lg border-b border-gray-100 p-3 text-left hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
-                  >
-                    <span className="relative z-1 block h-10 w-full max-w-10 rounded-full">
-                      {r.image_url ? (
-                        <img src={r.image_url} alt="" className="h-10 w-10 overflow-hidden rounded-full object-cover" />
-                      ) : (
-                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mood-accent/10 text-mood-accent">
-                          <Bell className="h-5 w-5" />
-                        </span>
-                      )}
-                      <span className="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-mood-accent dark:border-gray-900"></span>
-                    </span>
+                <li
+                  key={r.id}
+                  data-mood={MOOD_BY_MODULE[r.source_module]}
+                  className="flex gap-3 border-b border-gray-100 p-3 dark:border-gray-800"
+                >
+                  <span className="relative z-1 block h-10 w-full max-w-10 rounded-full">
+                    {r.image_url ? (
+                      <img src={r.image_url} alt="" className="h-10 w-10 overflow-hidden rounded-full object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mood-accent/10 text-mood-accent">
+                        <Bell className="h-5 w-5" />
+                      </span>
+                    )}
+                    <span className="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white bg-mood-accent dark:border-gray-900"></span>
+                  </span>
 
-                    <span className="block">
-                      <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
-                        <span className="font-medium text-gray-800 dark:text-white/90">{r.title}</span>
-                        {r.body ? ` — ${r.body}` : ''}
-                      </span>
-                      <span className="flex items-center gap-2 text-theme-xs text-gray-500 dark:text-gray-400">
-                        <span>{LABEL_BY_MODULE[r.source_module]}</span>
-                        <span className="h-1 w-1 rounded-full bg-gray-400"></span>
-                        <span>{timeAgo(r.fire_at)}</span>
-                      </span>
-                    </span>
-                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium text-gray-800 dark:text-white/90">{r.title}</span>
+                      {r.body ? ` — ${r.body}` : ''}
+                    </p>
+                    <p className="flex items-center gap-2 text-theme-xs text-gray-500 dark:text-gray-400">
+                      <span>{LABEL_BY_MODULE[r.source_module]}</span>
+                      <span className="h-1 w-1 rounded-full bg-gray-400"></span>
+                      <span>{timeAgo(r.fire_at)}</span>
+                    </p>
+
+                    {/* The row itself is no longer a button. It used to be one
+                        whose only behaviour was closing the panel, and these
+                        three could not live inside it — a <button> nested in a
+                        <button> is invalid and the click targets fight.
+                        Deliberately not closing the panel either: clearing
+                        three reminders should be three taps. */}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => markDone(r.id)}
+                        className="rounded-lg bg-mood-accent px-3 py-1 text-theme-xs font-medium text-white"
+                      >
+                        Done
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => snooze(r.id, 10)}
+                        className="rounded-lg border border-gray-300 px-3 py-1 text-theme-xs text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
+                      >
+                        Snooze 10m
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => snooze(r.id, 60)}
+                        className="rounded-lg border border-gray-300 px-3 py-1 text-theme-xs text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5"
+                      >
+                        Snooze 1h
+                      </button>
+                    </div>
+                  </div>
                 </li>
               ))
             )}
