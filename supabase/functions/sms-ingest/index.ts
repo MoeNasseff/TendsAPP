@@ -1,12 +1,17 @@
 // SMS/bank-text ingestion. An iOS Shortcut POSTs the raw message text here;
 // this endpoint authenticates it with a per-user token -- never a Supabase
 // session, since there is no login flow on a phone automation -- dedupes it,
-// masks anything that looks like a full card number, and inserts it as
-// `status: 'unparsed'`. Parsing is Session 25's job, not this file's: see
+// masks anything that looks like a full card number, and inserts it. It then
+// tries to parse the message: deterministic patterns first (Session 25,
+// parsers/index.ts -- an empty registry until that session lands), an AI
+// fallback second (Session 27, ai-parse.ts) only if the user has opted in,
+// then merchant/category/payment-method matching (enrich.ts). See
 // tasks/handoff-4.md.
 //
 // Nothing here ever writes to `expenses`. A bank text is a notification, not
-// a ledger entry -- every row is reviewed by hand on /inbox.
+// a ledger entry -- whatever gets parsed still lands `status: 'pending'` (or
+// stays `'unparsed'` if nothing could be read), and every row is reviewed by
+// hand on /inbox before it becomes real spending.
 //
 // Deployed with JWT verification OFF at the gateway
 // (`supabase functions deploy sms-ingest --no-verify-jwt`), the same way
@@ -14,6 +19,18 @@
 // present, so this function does 100% of its own authentication below, via
 // `x-tend-token`.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { aiParse } from './ai-parse.ts'
+import { enrich, matchInstallmentPlan } from './enrich.ts'
+import { runDeterministicParsers, type ParsedFields } from './parsers/index.ts'
+
+// Keep in sync with GEMINI_DEFAULT_MODEL in src/lib/ai/gemini.ts and
+// DEFAULT_MODEL in ai-proxy/index.ts.
+const DEFAULT_AI_MODEL = 'gemini-3.6-flash'
+// Bumped whenever the prompt or schema in ai-parse.ts changes meaningfully,
+// so a later fix can find and re-parse exactly the rows a given version
+// handled. S25's parsers will want their own per-module versioning; this one
+// constant is enough while AI is the only fallback that exists.
+const PARSER_VERSION = 'ai-v1'
 
 const MAX_BODY_BYTES = 8 * 1024
 const MAX_TEXT_LENGTH = 2000
@@ -160,5 +177,112 @@ Deno.serve(async (req: Request) => {
     console.error('sms-ingest: last_used_at stamp failed')
   }
 
+  // ---- 4. Parse, enrich, and update. Best-effort. -------------------------
+  // A failure or an inconclusive result anywhere in here must still return
+  // 200 -- the row was inserted successfully and stays `unparsed`, which is
+  // itself a correct, reviewable outcome. Nothing in this block ever writes
+  // to `expenses`.
+  try {
+    await parseAndEnrich(admin, userId, inserted.id, text)
+  } catch (err) {
+    console.error('sms-ingest: parse/enrich failed', err instanceof Error ? err.message : err)
+  }
+
   return json({ ok: true, duplicate: false, id: inserted.id }, 200)
 })
+
+async function parseAndEnrich(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  rowId: string,
+  text: string,
+): Promise<void> {
+  let fields: ParsedFields | null = runDeterministicParsers(text)
+  let parseMethod: 'regex' | 'ai' | 'none' | null = fields ? 'regex' : null
+  let confidence: number | null = null
+
+  if (!fields) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('sms_ai_parsing_enabled')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (profile?.sms_ai_parsing_enabled) {
+      const apiKey = await resolveGeminiKey(admin, userId)
+      if (apiKey) {
+        const aiFields = await aiParse(text, apiKey.key, apiKey.model)
+        if (aiFields) {
+          fields = aiFields
+          confidence = aiFields.confidence
+          parseMethod = 'ai'
+        } else {
+          // AI ran and concluded this is not a transaction (or the call
+          // failed) -- distinct from "never attempted", which stays null.
+          parseMethod = 'none'
+        }
+      }
+    }
+  }
+
+  const update: Record<string, unknown> = { parser_version: PARSER_VERSION }
+  if (parseMethod) update.parse_method = parseMethod
+
+  if (fields) {
+    update.parsed_direction = fields.direction
+    update.parsed_amount = fields.amount
+    update.parsed_currency = fields.currency
+    update.parsed_merchant_raw = fields.merchantRaw
+    update.parsed_last4 = fields.last4
+    update.parsed_occurred_at = fields.occurredAt
+    update.parsed_balance = fields.balance
+    update.parse_confidence = confidence
+    // A parsed amount is what makes a row worth a human's attention. Without
+    // one -- direction/merchant with no figure -- it stays `unparsed` rather
+    // than moving to `pending`, which the UI reads as "ready to review".
+    if (fields.amount !== null) update.status = 'pending'
+
+    const enrichment = await enrich(admin, userId, {
+      merchantRaw: fields.merchantRaw,
+      last4: fields.last4,
+    })
+    update.matched_merchant_id = enrichment.merchantId
+    update.suggested_category_id = enrichment.categoryId
+    update.suggested_payment_method_id = enrichment.paymentMethodId
+
+    if (fields.direction === 'debit') {
+      const planId = await matchInstallmentPlan(admin, userId, enrichment.paymentMethodId, fields.amount)
+      if (planId) update.matched_installment_plan_id = planId
+    }
+  }
+
+  if (Object.keys(update).length > 0) {
+    await admin.from('sms_inbox').update(update).eq('id', rowId)
+  }
+}
+
+/**
+ * Mirrors ai-proxy's own key resolution (BYOK row first if enabled and
+ * present, else the managed GEMINI_API_KEY secret) rather than calling
+ * ai-proxy over HTTP: ai-proxy requires a Supabase session JWT, and this
+ * function has none to offer it -- the caller is a phone automation with no
+ * login flow. sms-ingest already holds service_role for this exact user, so
+ * resolving the key directly is the smaller footprint of the two options.
+ */
+async function resolveGeminiKey(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<{ key: string; model: string } | null> {
+  const { data: config } = await admin
+    .from('ai_provider_configs')
+    .select('api_key, model')
+    .eq('user_id', userId)
+    .eq('provider', 'gemini')
+    .eq('enabled', true)
+    .maybeSingle()
+
+  if (config?.api_key) return { key: config.api_key, model: config.model || DEFAULT_AI_MODEL }
+
+  const managedKey = Deno.env.get('GEMINI_API_KEY')
+  return managedKey ? { key: managedKey, model: DEFAULT_AI_MODEL } : null
+}

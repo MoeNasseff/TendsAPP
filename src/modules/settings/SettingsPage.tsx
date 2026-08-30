@@ -149,6 +149,8 @@ export function SettingsPage() {
 
       <AIProviderSettings />
 
+      <SmsAiSettings />
+
       <Card>
         <button
           type="button"
@@ -286,6 +288,46 @@ function AIProviderSettings() {
         Adding your own key is optional. Expenses can always be entered manually, with or without
         a provider.
       </p>
+    </Card>
+  )
+}
+
+/**
+ * Consent toggle for the SMS-inbox AI fallback (Session 27). Off by default;
+ * this is the only place that turns it on. Deliberately its own card, not
+ * folded into AIProviderSettings above — having a working Gemini key for
+ * receipt scanning does not imply consent to send bank-text content
+ * anywhere, and the two need separate, explicit agreement.
+ */
+function SmsAiSettings() {
+  const { profile, loading, updateProfile } = useProfile()
+  const showToast = useToast()
+
+  if (loading) return null
+
+  async function handleToggle() {
+    const { error } = await updateProfile({ sms_ai_parsing_enabled: !profile.sms_ai_parsing_enabled })
+    if (error) showToast(error.message, 'error')
+  }
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Bank text parsing</h2>
+      <p className="text-xs text-slate-500 dark:text-white/50">
+        When a bank or payment text can&rsquo;t be read by Tend&rsquo;s own built-in parsers, this
+        sends just that message&rsquo;s text to your configured AI provider to extract the amount
+        and merchant. Off by default. Either way, the result still needs your review on Inbox
+        before it becomes an expense — nothing is created automatically.
+      </p>
+      <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-white/80">
+        <input
+          type="checkbox"
+          checked={profile.sms_ai_parsing_enabled}
+          onChange={handleToggle}
+          className="h-4 w-4 rounded border-black/10 dark:border-white/10"
+        />
+        Allow AI parsing for bank texts that can&rsquo;t be read deterministically
+      </label>
     </Card>
   )
 }

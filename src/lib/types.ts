@@ -393,6 +393,7 @@ export interface InboxMessage {
   matched_merchant_id: string | null
   suggested_category_id: string | null
   suggested_payment_method_id: string | null
+  matched_installment_plan_id: string | null
   status: InboxMessageStatus
   expense_id: string | null
   created_at: string

@@ -30,7 +30,7 @@ function StatusBadge({ message }: { message: InboxMessage }) {
     case 'pending':
       return (
         <Badge color="light" size="sm">
-          Parsed — needs review
+          {message.parse_method === 'ai' ? 'AI-parsed — needs review' : 'Parsed — needs review'}
         </Badge>
       )
     case 'accepted':

@@ -5,9 +5,13 @@ import { useAuth } from './useAuth'
 export interface Profile {
   display_name: string | null
   avatar_url: string | null
+  /** Off by default. Governs whether sms-ingest may send a bank text's raw
+   *  content to the AI fallback when no deterministic parser can read it —
+   *  see supabase/functions/sms-ingest/ai-parse.ts. */
+  sms_ai_parsing_enabled: boolean
 }
 
-const EMPTY_PROFILE: Profile = { display_name: null, avatar_url: null }
+const EMPTY_PROFILE: Profile = { display_name: null, avatar_url: null, sms_ai_parsing_enabled: false }
 
 /** Shared by UserAvatar (initials/photo) and SettingsPage (edit form) so
  * both read the same row instead of issuing separate queries. */
@@ -26,7 +30,7 @@ export function useProfile() {
     setLoading(true)
     supabase
       .from('profiles')
-      .select('display_name, avatar_url')
+      .select('display_name, avatar_url, sms_ai_parsing_enabled')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
