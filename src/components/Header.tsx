@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useBrand } from '../hooks/useBrand'
 import { useSidebar } from '../hooks/useSidebar'
 import { useTheme } from '../hooks/useTheme'
+import { InboxDropdown } from './InboxDropdown'
 import { NotificationDropdown } from './NotificationDropdown'
 import { UserAvatar } from './UserAvatar'
 
@@ -173,6 +174,13 @@ export function Header() {
 
             {/* The hide-amounts toggle used to sit here. It now lives beside
                 the page title that owns the amounts — see PrivacyToggle. */}
+
+            {/* Pending bank texts, built the same way NotificationDropdown is
+                (same circle chrome, same ping dot) — kept as its own button
+                rather than merged into the bell's panel, so "what's due" and
+                "what needs review" stay visually distinct. /inbox is out of
+                the sidebar for now (see nav-items.ts); this is the way in. */}
+            <InboxDropdown />
 
             {/* The bell, its ping dot and the panel it opens all live in
                 NotificationDropdown — TailAdmin's markup wrapped around real

@@ -10,6 +10,7 @@ import { useTheme } from '../../hooks/useTheme'
 import type { ThemeMode } from '../../lib/theme'
 import { useToast } from '../../hooks/useToast'
 import { supabase } from '../../lib/supabase'
+import { IngestTokensSettings } from './IngestTokensSettings'
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -150,6 +151,8 @@ export function SettingsPage() {
       <AIProviderSettings />
 
       <SmsAiSettings />
+
+      <IngestTokensSettings />
 
       <Card>
         <button
