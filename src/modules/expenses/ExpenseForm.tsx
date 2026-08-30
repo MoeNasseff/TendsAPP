@@ -6,15 +6,28 @@ import type { ExpenseInput } from './useExpenses'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+/** Pre-fills a new (not yet persisted) expense — the SMS inbox uses this to
+ *  carry a parsed amount/category/date into this form without pretending a
+ *  draft is an already-saved Expense (which `editing` requires an id for).
+ *  Ignored whenever `editing` is set. */
+export interface ExpenseDraft {
+  amount?: number | null
+  category_id?: string | null
+  note?: string | null
+  spent_at?: string | null
+}
+
 export function ExpenseForm({
   categories,
   editing,
+  initial,
   onSubmit,
   onCancelEdit,
   onAddCategory,
 }: {
   categories: ExpenseCategory[]
   editing: Expense | null
+  initial?: ExpenseDraft
   onSubmit: (input: ExpenseInput) => Promise<void>
   onCancelEdit: () => void
   onAddCategory: (input: { name: string; color: string }) => Promise<void>
@@ -35,13 +48,18 @@ export function ExpenseForm({
       setCategoryId(editing.category_id ?? '')
       setNote(editing.note ?? '')
       setSpentAt(editing.spent_at)
+    } else if (initial) {
+      setAmount(initial.amount != null ? String(initial.amount) : '')
+      setCategoryId(initial.category_id ?? '')
+      setNote(initial.note ?? '')
+      setSpentAt(initial.spent_at ?? today())
     } else {
       setAmount('')
       setCategoryId('')
       setNote('')
       setSpentAt(today())
     }
-  }, [editing])
+  }, [editing, initial])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

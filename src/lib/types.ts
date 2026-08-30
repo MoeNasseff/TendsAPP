@@ -348,6 +348,56 @@ export interface RecurringBillPayment {
   created_at: string
 }
 
+export type IngestSource = 'ios-automation' | 'share-sheet' | 'manual' | 'email'
+export type InboxDirection = 'debit' | 'credit'
+export type InboxParseMethod = 'regex' | 'ai' | 'none'
+export type InboxMessageStatus = 'pending' | 'accepted' | 'rejected' | 'ignored' | 'unparsed'
+
+/** A Shortcut's authentication credential — see sms-ingest. `token_hash` is
+ *  the only form of the secret ever stored; the raw value is shown once. */
+export interface IngestToken {
+  id: string
+  user_id: string
+  token_hash: string
+  label: string | null
+  last_used_at: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+/**
+ * One bank/payment text message, from ingestion through review. `raw_text`
+ * is nullable so a future retention job can clear it while the parsed result
+ * and the audit trail (received_at, status, expense_id) survive. Every
+ * `parsed_*` field is null until a parser (regex or AI) has run, and stays
+ * null forever on a row nothing could read.
+ */
+export interface InboxMessage {
+  id: string
+  user_id: string
+  raw_text: string | null
+  sender_label: string | null
+  received_at: string
+  source: IngestSource
+  dedupe_hash: string
+  parsed_amount: number | null
+  parsed_currency: string | null
+  parsed_direction: InboxDirection | null
+  parsed_merchant_raw: string | null
+  parsed_last4: string | null
+  parsed_occurred_at: string | null
+  parsed_balance: number | null
+  parse_method: InboxParseMethod | null
+  parse_confidence: number | null
+  parser_version: string | null
+  matched_merchant_id: string | null
+  suggested_category_id: string | null
+  suggested_payment_method_id: string | null
+  status: InboxMessageStatus
+  expense_id: string | null
+  created_at: string
+}
+
 export interface PriceObservation {
   id: string
   user_id: string

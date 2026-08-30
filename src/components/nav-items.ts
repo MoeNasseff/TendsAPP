@@ -111,6 +111,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { name: 'Overview', path: '/expenses' },
           { name: 'Analytics', path: '/analytics' },
           { name: 'Bills', path: '/bills' },
+          { name: 'Inbox', path: '/inbox' },
           ...NAV_ITEMS.filter(({ to }) => to !== '/expenses').map(({ to, label }) => ({
             name: label,
             path: to,
