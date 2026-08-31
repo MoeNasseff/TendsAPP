@@ -49,11 +49,14 @@ This is the one shortcut every automation in Step 4 will call.
    ```
 5. Tap **Show More** to reveal Method, Headers, and Request Body.
 6. **Method**: `POST`.
-7. **Headers** — add two:
+7. **Headers** — add three:
    | Key | Value |
    |---|---|
    | `Content-Type` | `application/json` |
    | `x-tend-token` | *(paste the token from Step 1)* |
+   | `apikey` | *(your Supabase anon/public key — see below)* |
+
+   To find your Supabase anon key, open the Supabase dashboard → **Project Settings** → **API** → copy the **anon/public key**. It's also available as `VITE_SUPABASE_ANON_KEY` in the project's `.env` file. This key is publishable and designed to be shipped in client apps — putting it in a phone shortcut is safe and expected. (The `x-tend-token` above is different — it's a bearer credential and must not be shared.)
 8. **Request Body**: set the type to **JSON**, then add these fields:
    | Key | Value |
    |---|---|
@@ -73,8 +76,10 @@ This is the one shortcut every automation in Step 4 will call.
 the Shortcuts app once (it will prompt for input since there's no automation
 feeding it yet — type any text). Check `/inbox` in Tend within a few seconds.
 If it doesn't appear, stop here and check: the token was pasted without
-extra spaces, the URL has no typo, and the header key is exactly
-`x-tend-token` (case doesn't matter, spelling does).
+extra spaces, the URL has no typo, the header key is exactly `x-tend-token`
+(case doesn't matter, spelling does), and the `apikey` header is present and
+correct. If you see a 401 or "Missing authorization header" response, the
+`apikey` header is absent or wrong — revisit Step 2.7.
 
 ## Step 3 — Find your trigger phrase per bank
 
@@ -85,16 +90,26 @@ The supported workaround is filtering by **message content** instead: a short
 phrase that appears in *every* transaction text from that sender and in
 *none* of its OTP or promotional texts.
 
-This phrase has to come from a real message, not a guess — see the
-**Trigger phrases** table in `tasks/sms-corpus.md`. That table is filled in
-once real messages have been collected and Session 25's parsers are built
-against them. Use whatever it lists for each bank; don't invent your own
-ahead of that, since a wrong phrase either never fires or fires on the wrong
-texts.
+Session 25's parsers have been built against real messages, so the trigger
+phrases are now known for CIB, FAB Misr, and NBE. Each phrase below appears
+in every transaction text from that sender and in none of its OTP or promo
+texts — use these exactly as listed:
 
-## Step 4 — One automation per bank
+| Sender   | Trigger phrase             | Covers                  |
+|----------|----------------------------|-------------------------|
+| CIB      | credit card ending with    | card purchases          |
+| CIB      | تم سداد مبلغ                | card payments           |
+| CIB      | is debited with amount     | account debits          |
+| CIB      | تحويل لحظي                  | instant transfers out   |
+| CIB      | تم خصم مبلغ                 | IPN transfers out       |
+| CIB      | من جهة العمل                | salary credit           |
+| FAB Misr | was debited with EGP       | card purchases          |
+| NBE      | من بطاقة الخصم المباشر       | debit card purchases    |
+| NBE      | تم إضافة تحويل لحظي          | transfers in            |
 
-Repeat this whole section once per sender in the trigger-phrase table.
+## Step 4 — One automation per phrase
+
+Repeat this whole section once per phrase in the table above. That's nine automations total — CIB sends six structurally different messages across two languages, so no single phrase appears in all of them. All nine automations will call the same **Send to Tend** shortcut.
 
 1. Shortcuts app → **Automation** tab → **+** → **Create Personal Automation**.
 2. Choose **Message**.
@@ -111,6 +126,12 @@ Repeat this whole section once per sender in the trigger-phrase table.
    thief's, if it's ever stolen) asking whether to run it, which is not
    hands-off and defeats the point.
 7. Save.
+
+**About ValU and Sympl.** ValU and Sympl are not in the table above because
+no messages from either have been collected yet. Once real messages arrive,
+their parsers will be built and they'll gain entries in the phrase table —
+at that point, add nine automations (or however many phrases they have) using
+the same steps as above. Until then, there's no automation or parser for them.
 
 ## Step 5 — The manual fallback
 
