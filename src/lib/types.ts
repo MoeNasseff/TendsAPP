@@ -118,7 +118,7 @@ export interface MedLog {
   created_at: string
 }
 
-export type ReminderSourceModule = 'dog' | 'car' | 'meds' | 'expense'
+export type ReminderSourceModule = 'dog' | 'car' | 'meds' | 'expense' | 'bill' | 'card' | 'installment' | 'inbox'
 export type ReminderStatus = 'scheduled' | 'sent' | 'snoozed' | 'cancelled' | 'done'
 export type ReminderChannel = 'telegram' | 'push' | 'email' | 'whatsapp'
 
@@ -134,6 +134,31 @@ export interface Reminder {
   channels: ReminderChannel[]
   status: ReminderStatus
   sent_at: string | null
+  /** Null for the pre-existing dog/car/meds branches, which keep their own
+   *  created_at-window dedupe. Populated (and unique where non-null) for
+   *  every type generate_reminders() added in S30a. */
+  dedupe_key: string | null
+  created_at: string
+}
+
+/** Matches tasks/s30-catalogue.md's own row IDs: 'A1'..'A3', 'B1'..'B9'. */
+export type NotificationPrefType = `A${1 | 2 | 3}` | `B${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`
+
+export interface NotificationPref {
+  id: string
+  user_id: string
+  type: NotificationPrefType
+  enabled: boolean
+  created_at: string
+}
+
+/** One row per user, created lazily by the /notifications page. Absent ⇒
+ *  the catalogue's signed-off defaults apply (00:00-08:00, digest at 20:00). */
+export interface NotificationSettings {
+  user_id: string
+  quiet_hours_start: string
+  quiet_hours_end: string
+  digest_hour: number
   created_at: string
 }
 
