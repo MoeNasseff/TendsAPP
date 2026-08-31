@@ -70,6 +70,9 @@ export function useInbox() {
    */
   async function acceptMessage(message: InboxMessage, input: ExpenseInput) {
     if (!user) return { error: new Error('Not signed in') }
+    if (message.parsed_direction === 'credit') {
+      return { error: new Error('This message is money coming in, not spending — it cannot be accepted as an expense.') }
+    }
 
     const { data, error: insertError } = await supabase
       .from('expenses')

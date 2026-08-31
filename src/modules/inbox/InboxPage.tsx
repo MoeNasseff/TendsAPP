@@ -54,6 +54,19 @@ function StatusBadge({ message }: { message: InboxMessage }) {
   }
 }
 
+function DirectionBadge({ direction }: { direction: InboxMessage['parsed_direction'] }) {
+  if (!direction) return null
+  return direction === 'credit' ? (
+    <Badge color="success" size="sm">
+      Money in
+    </Badge>
+  ) : (
+    <Badge color="light" size="sm">
+      Money out
+    </Badge>
+  )
+}
+
 function PendingRow({
   message,
   expanded,
@@ -67,6 +80,7 @@ function PendingRow({
   onAccept: () => void
   onReject: () => void
 }) {
+  const isCredit = message.parsed_direction === 'credit'
   return (
     <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 last:border-0 last:pb-0 dark:border-white/10">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -76,6 +90,7 @@ function PendingRow({
               {message.sender_label ?? 'Unknown sender'}
             </p>
             <StatusBadge message={message} />
+            <DirectionBadge direction={message.parsed_direction} />
           </div>
           <span className="block truncate text-gray-500 text-theme-xs dark:text-gray-400">
             {formatDateTime(message.received_at)}
@@ -90,19 +105,21 @@ function PendingRow({
               <SensitiveValue>{formatCurrency(message.parsed_amount, message.parsed_currency ?? 'EGP')}</SensitiveValue>
             )}
           </span>
-          <button
-            type="button"
-            onClick={onAccept}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
-          >
-            Accept
-          </button>
+          {!isCredit && (
+            <button
+              type="button"
+              onClick={onAccept}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+            >
+              Accept
+            </button>
+          )}
           <button
             type="button"
             onClick={onReject}
             className="rounded-lg px-2 py-1.5 text-theme-xs text-gray-500 hover:text-error-600 dark:text-gray-400 dark:hover:text-error-500"
           >
-            Reject
+            {isCredit ? 'Dismiss' : 'Reject'}
           </button>
         </div>
       </div>
@@ -268,9 +285,13 @@ export function InboxPage() {
 
       <ConfirmDialog
         open={!!rejecting}
-        title="Reject this message?"
-        message="It stays in your history marked rejected, and nothing is created from it."
-        confirmLabel="Reject"
+        title={rejecting?.parsed_direction === 'credit' ? 'Dismiss this message?' : 'Reject this message?'}
+        message={
+          rejecting?.parsed_direction === 'credit'
+            ? 'It stays in your history — this is money coming in, not spending, so nothing is created from it.'
+            : 'It stays in your history marked rejected, and nothing is created from it.'
+        }
+        confirmLabel={rejecting?.parsed_direction === 'credit' ? 'Dismiss' : 'Reject'}
         onCancel={() => setRejecting(null)}
         onConfirm={async () => {
           if (rejecting) await rejectMessage(rejecting.id)
