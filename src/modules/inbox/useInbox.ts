@@ -85,8 +85,49 @@ export function useInbox() {
       .from('sms_inbox')
       .update({ status: 'accepted', expense_id: data.id })
       .eq('id', message.id)
-    if (!updateError) await load()
-    return { error: updateError }
+    if (updateError) return { error: updateError }
+
+    await recordBalanceObservation(message)
+    await load()
+    return { error: null }
+  }
+
+  /**
+   * Best-effort: a failure here does not undo the expense that was just
+   * created, and never blocks acceptMessage from returning success — this is
+   * secondary enrichment (S32b), not the point of accepting.
+   *
+   * Routes by payment_methods.kind rather than parsed_direction, because a
+   * card CHARGE and a debit-card PURCHASE are both direction: 'debit' but
+   * parsed_balance means opposite things on them — "still borrowable" for a
+   * credit card, real cash for a debit card/account. See
+   * 20260901000000_account_balances.sql for why the two live in separate
+   * columns.
+   */
+  async function recordBalanceObservation(message: InboxMessage) {
+    if (!user) return
+    if (message.parsed_balance === null || !message.suggested_payment_method_id) return
+
+    const { data: method } = await supabase
+      .from('payment_methods')
+      .select('kind')
+      .eq('id', message.suggested_payment_method_id)
+      .maybeSingle()
+    if (!method) return
+
+    const isCredit = method.kind === 'credit_card'
+    const isDebitLike = method.kind === 'debit_card' || method.kind === 'bank_transfer'
+    if (!isCredit && !isDebitLike) return
+
+    await supabase.from('account_balances').insert({
+      user_id: user.id,
+      payment_method_id: message.suggested_payment_method_id,
+      balance: isDebitLike ? message.parsed_balance : null,
+      available_credit: isCredit ? message.parsed_balance : null,
+      source: 'sms',
+      observed_at: message.parsed_occurred_at ?? message.received_at,
+      sms_inbox_id: message.id,
+    })
   }
 
   async function rejectMessage(id: string) {
