@@ -1,13 +1,17 @@
 -- Extends generate_reminders() with the catalogue's B1-B9 rows
 -- (tasks/s30-catalogue.md, signed off 2026-08-31). The existing dog/car/meds
--- branches from 20260705000001_reminders_generation_and_cron.sql are carried
--- over unchanged, including their own created_at-window dedupe — this
--- session adds a real dedupe key (previous migration) for the new branches
--- only, rather than retrofitting working code.
+-- branches from 20260705000001_reminders_generation_and_cron.sql keep their
+-- own created_at-window dedupe unchanged — this session adds a real dedupe
+-- key (previous migration) for the new branches only, rather than
+-- retrofitting that part of working code.
 --
--- Every new branch is skipped for a user who has explicitly disabled that
--- type in notification_prefs. Absence of a prefs row means "use the
--- catalogue's default" (On for everything except B8, which defaults Off).
+-- Every branch, old and new, is skipped for a user who has explicitly
+-- disabled that type in notification_prefs. Absence of a prefs row means
+-- "use the catalogue's default" (On for everything except B8, which defaults
+-- Off). The dog/car/meds guard is added here, in the same migration that
+-- introduces notification_prefs' consumers, rather than left unenforced —
+-- the S30b /notifications page offers a toggle for A1-A3 same as every other
+-- row, and a toggle that saves but does nothing is worse than no toggle.
 
 -- ───────────────────────── next_day_of_month ─────────────────────────
 -- payment_methods.due_day / statement_day are ints 1-31, not dates. This
@@ -66,6 +70,10 @@ begin
     and not exists (
       select 1 from public.reminders r
       where r.source_module = 'dog' and r.source_id = di.id and r.created_at > now() - interval '1 day'
+    )
+    and not exists (
+      select 1 from public.notification_prefs np
+      where np.user_id = di.user_id and np.type = 'A1' and np.enabled = false
     );
 
   -- Car services within 1000 km of due (or already overdue).
@@ -91,6 +99,10 @@ begin
     and not exists (
       select 1 from public.reminders r
       where r.source_module = 'car' and r.source_id = cs.id and r.created_at > now() - interval '1 day'
+    )
+    and not exists (
+      select 1 from public.notification_prefs np
+      where np.user_id = cs.user_id and np.type = 'A2' and np.enabled = false
     );
 
   -- Missed med doses: a dose slot today whose time has passed with no
@@ -119,6 +131,10 @@ begin
       select 1 from public.reminders r
       where r.source_module = 'meds' and r.source_id = m.id
         and r.fire_at = (current_date + t.time_slot::time) at time zone 'UTC'
+    )
+    and not exists (
+      select 1 from public.notification_prefs np
+      where np.user_id = m.user_id and np.type = 'A3' and np.enabled = false
     );
 
   -- ───────────────────────── B1: Recurring bill due (5 days before) ─────────────────────────

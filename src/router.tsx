@@ -161,6 +161,13 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'notifications',
+                lazy: async () => {
+                  const { NotificationsPage } = await import('./modules/notifications/NotificationsPage')
+                  return { Component: NotificationsPage }
+                },
+              },
+              {
                 path: 'api-keys',
                 lazy: async () => {
                   const { ApiKeysPage } = await import('./modules/settings/ApiKeysPage')
