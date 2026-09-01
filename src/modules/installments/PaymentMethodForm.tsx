@@ -35,7 +35,16 @@ export function PaymentMethodForm({
   const [error, setError] = useState<string | null>(null)
 
   const isCard = kind === 'credit_card' || kind === 'debit_card'
-  const providers = providersOfKind(isCard ? 'credit_card' : kind)
+  // A bank account has an identifying last4 too — CIB's current account is
+  // stored as last4='6196' (what its SMS actually renders) so incoming
+  // messages can resolve to it; see 20260901000000_account_balances.sql.
+  // Network/issuer/provider stay card-only — an account has no card network.
+  const showLast4 = isCard || kind === 'bank_transfer'
+  // Banks are tagged 'credit_card' in PROVIDERS (their card-issuing role),
+  // but a bank_transfer account belongs to a bank too — same dropdown, so an
+  // account can pick CIB/NBE and get grouped and logo'd with that bank's
+  // cards, rather than always falling to "not listed".
+  const providers = providersOfKind(isCard || kind === 'bank_transfer' ? 'credit_card' : kind)
 
   /**
    * Refuses anything longer than four digits rather than truncating it. If a
@@ -55,7 +64,7 @@ export function PaymentMethodForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (isCard && last4 !== '' && last4.length !== 4) {
+    if (showLast4 && last4 !== '' && last4.length !== 4) {
       setError('Last 4 digits must be exactly four numbers, or left blank.')
       return
     }
@@ -68,7 +77,7 @@ export function PaymentMethodForm({
         label: label.trim(),
         network: isCard && network ? network : null,
         issuer: isCard ? issuer.trim() || null : null,
-        last4: isCard && last4 ? last4 : null,
+        last4: showLast4 && last4 ? last4 : null,
         // Blank means "not recorded", which is stored as null and reads as
         // unknown utilisation — never as a zero limit.
         credit_limit: creditLimit === '' ? null : Number(creditLimit),
@@ -162,20 +171,6 @@ export function PaymentMethodForm({
             </select>
           </label>
 
-          <label htmlFor="pm-last4" className="flex flex-col gap-1">
-            <span className={LABEL}>Last 4 digits</span>
-            <input
-              id="pm-last4"
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="4417"
-              value={last4}
-              onChange={(e) => handleLast4(e.target.value)}
-              className={FIELD}
-            />
-          </label>
-
           <label htmlFor="pm-issuer" className="flex flex-col gap-1">
             <span className={LABEL}>Issuing bank</span>
             <input
@@ -187,6 +182,27 @@ export function PaymentMethodForm({
             />
           </label>
         </>
+      )}
+
+      {showLast4 && (
+        <label htmlFor="pm-last4" className="flex flex-col gap-1">
+          <span className={LABEL}>Last 4 digits</span>
+          <input
+            id="pm-last4"
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
+            placeholder={isCard ? '4417' : '6196'}
+            value={last4}
+            onChange={(e) => handleLast4(e.target.value)}
+            className={FIELD}
+          />
+          {!isCard && (
+            <span className="text-theme-xs text-gray-500 dark:text-gray-400">
+              What your bank's own texts show, if it differs from the number you know the account by.
+            </span>
+          )}
+        </label>
       )}
 
       <label htmlFor="pm-limit" className="flex flex-col gap-1">

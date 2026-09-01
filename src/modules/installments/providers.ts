@@ -43,7 +43,7 @@ export const PROVIDERS: readonly Provider[] = [
   { slug: 'halan', label: 'Halan', kind: 'bnpl', brand: '#c2410c' },
   { slug: 'cib', label: 'CIB', kind: 'credit_card', brand: '#00539f', logo: 'CIB-bank.png', logoFit: 'cover' },
   { slug: 'fab-misr', label: 'FAB Misr', kind: 'credit_card', brand: '#1b2a63', logo: 'FAB-bank.png', logoFit: 'cover' },
-  { slug: 'nbe', label: 'NBE', kind: 'credit_card', brand: '#065f46' },
+  { slug: 'nbe', label: 'NBE', kind: 'credit_card', brand: '#065f46', logo: 'NBE-bank.png', logoFit: 'cover' },
   { slug: 'banque-misr', label: 'Banque Misr', kind: 'credit_card', brand: '#9f1239' },
   { slug: 'qnb', label: 'QNB', kind: 'credit_card', brand: '#5b21b6' },
   { slug: 'alexbank', label: 'AlexBank', kind: 'credit_card', brand: '#1e40af' },

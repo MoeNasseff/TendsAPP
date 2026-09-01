@@ -168,6 +168,13 @@ export const router = createBrowserRouter([
                 },
               },
               {
+                path: 'accounts',
+                lazy: async () => {
+                  const { AccountsPage } = await import('./modules/accounts/AccountsPage')
+                  return { Component: AccountsPage }
+                },
+              },
+              {
                 path: 'api-keys',
                 lazy: async () => {
                   const { ApiKeysPage } = await import('./modules/settings/ApiKeysPage')
