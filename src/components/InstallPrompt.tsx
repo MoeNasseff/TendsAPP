@@ -16,7 +16,11 @@ export function InstallPrompt() {
   if (!available || dismissed) return null
 
   return (
-    <div className="glass fixed inset-x-4 bottom-20 z-[80] flex items-center gap-3 rounded-xl border p-3 shadow-xl sm:inset-x-auto sm:bottom-4 sm:left-60 sm:max-w-sm">
+    // bottom-28 (112px), up from bottom-20: the floating pill nav (Session 31)
+    // occupies more vertical space than the old flush bar did, so this needs
+    // more clearance to avoid overlapping it — both must be readable at once,
+    // which is the state a first-time mobile user actually sees.
+    <div className="glass fixed inset-x-4 bottom-28 z-[80] flex items-center gap-3 rounded-xl border p-3 shadow-xl sm:inset-x-auto sm:bottom-4 sm:left-60 sm:max-w-sm">
       <Download className="h-5 w-5 shrink-0 text-mood-accent" />
       <p className="flex-1 text-sm text-gray-600 dark:text-gray-300">Install this app for quick access and push reminders.</p>
       <button

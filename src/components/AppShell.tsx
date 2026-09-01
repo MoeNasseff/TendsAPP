@@ -44,12 +44,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             they were designed against rather than a rhythm inherited from
             Tend's pre-redesign look.
             The exception is the bottom edge below `sm`, where BottomNav is a
-            71px fixed bar TailAdmin has no equivalent for. Their `pb-20` (80px)
-            would leave 9px of clearance and none at all once a notched device
-            adds its inset, so that one value stays safe-area aware. From `sm`
-            up BottomNav is hidden (`sm:hidden`) and the reference's own values
-            take over exactly. */}
-        <main className="mx-auto max-w-(--breakpoint-2xl) p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-4 md:p-6 md:pb-6">
+            floating pill TailAdmin has no equivalent for. A pill inset from
+            the edge occupies MORE total space than a bar flush to it did —
+            roughly 78px of pill plus its own 12px bottom offset, ~90px total —
+            so this padding grew from 6rem to 7rem to keep the same clearance
+            margin the flush bar had. From `sm` up BottomNav is hidden
+            (`sm:hidden`) and the reference's own values take over exactly. */}
+        <main className="mx-auto max-w-(--breakpoint-2xl) p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:pb-4 md:p-6 md:pb-6">
           {reduce ? (
             children
           ) : (
