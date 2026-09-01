@@ -291,6 +291,28 @@ export interface PaymentMethod {
   created_at: string
 }
 
+export type AccountBalanceSource = 'sms' | 'manual' | 'statement'
+
+/**
+ * One balance reading for a payment method — a debit account's cash or a
+ * credit card's available limit, never both meaningfully at once. Append-only:
+ * a method's current balance is its latest row by `observed_at`, not a value
+ * ever updated in place. See 20260901000000_account_balances.sql for why
+ * `balance` and `available_credit` are separate columns rather than one
+ * reused for both.
+ */
+export interface AccountBalance {
+  id: string
+  user_id: string
+  payment_method_id: string
+  balance: number | null
+  available_credit: number | null
+  source: AccountBalanceSource
+  observed_at: string
+  sms_inbox_id: string | null
+  created_at: string
+}
+
 export interface InstallmentPlan {
   id: string
   user_id: string
