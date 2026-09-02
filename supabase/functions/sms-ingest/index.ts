@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
   // itself a correct, reviewable outcome. Nothing in this block ever writes
   // to `expenses`.
   try {
-    await parseAndEnrich(admin, userId, inserted.id, text)
+    await parseAndEnrich(admin, userId, inserted.id, text, senderLabel)
   } catch (err) {
     console.error('sms-ingest: parse/enrich failed', err instanceof Error ? err.message : err)
   }
@@ -196,8 +196,9 @@ async function parseAndEnrich(
   userId: string,
   rowId: string,
   text: string,
+  existingSenderLabel: string | null,
 ): Promise<void> {
-  let fields: ParsedFields | null = runDeterministicParsers(text)
+  let fields: (ParsedFields & { sender?: string }) | null = runDeterministicParsers(text)
   let parseMethod: 'regex' | 'ai' | 'none' | null = fields ? 'regex' : null
   let confidence: number | null = null
 
@@ -227,6 +228,11 @@ async function parseAndEnrich(
 
   const update: Record<string, unknown> = { parser_version: PARSER_VERSION }
   if (parseMethod) update.parse_method = parseMethod
+  // The deterministic parser knows which bank matched it the moment it does --
+  // no separate detection needed. Fills in what the Shortcut's own payload
+  // didn't carry, rather than leaving the row to read "Unknown sender" for a
+  // bank the app already identified.
+  if (!existingSenderLabel && fields?.sender) update.sender_label = fields.sender
 
   if (fields) {
     update.parsed_direction = fields.direction

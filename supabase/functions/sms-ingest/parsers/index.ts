@@ -33,15 +33,25 @@ export { isSalaryCredit } from './cib.ts'
 
 type Parser = (text: string) => ParsedFields | null
 
-const PARSERS: Parser[] = [cib, fab, nbe]
+/**
+ * Which bank each module handles -- known the moment a pattern matches, no
+ * separate detection needed. Used to fill sender_label when the iOS
+ * Shortcut's own payload doesn't carry one, so "which bank" isn't lost just
+ * because the phone side never sent it.
+ */
+const PARSERS: { sender: string; match: Parser }[] = [
+  { sender: 'CIB', match: cib },
+  { sender: 'FAB Misr', match: fab },
+  { sender: 'NBE', match: nbe },
+]
 
-export function runDeterministicParsers(text: string): ParsedFields | null {
-  for (const parser of PARSERS) {
-    const result = parser(text)
+export function runDeterministicParsers(text: string): (ParsedFields & { sender: string }) | null {
+  for (const { sender, match } of PARSERS) {
+    const result = match(text)
     // An amount is the one field with no safe default. A "match" without one is
     // a pattern that fired on the wrong message, so it is discarded rather than
     // written as a transaction with a null amount.
-    if (result && result.amount !== null) return result
+    if (result && result.amount !== null) return { ...result, sender }
   }
   return null
 }
