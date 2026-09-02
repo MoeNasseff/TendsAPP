@@ -100,12 +100,18 @@ texts — use these exactly as listed:
 | CIB      | credit card ending with    | card purchases          |
 | CIB      | تم سداد مبلغ                | card payments           |
 | CIB      | is debited with amount     | account debits          |
-| CIB      | تحويل لحظي                  | instant transfers out   |
+| CIB      | تحويل لحظي                  | InstaPay transfer, either direction |
 | CIB      | تم خصم مبلغ                 | IPN transfers out       |
 | CIB      | من جهة العمل                | salary credit           |
 | FAB Misr | was debited with EGP       | card purchases          |
 | NBE      | من بطاقة الخصم المباشر       | debit card purchases    |
 | NBE      | تم إضافة تحويل لحظي          | transfers in            |
+
+CIB's `تحويل لحظي` phrase is InstaPay/IPN traffic and deliberately not scoped
+to outgoing only — it is a substring of both `...تحويل لحظي بمبلغ...من
+حسابك...` (out) and `...تحويل لحظي بمبلغ...إلى حسابك...` (in), so this one
+automation already catches both directions. Confirmed 2026-09-02 against a
+real incoming message — no separate phrase or automation needed for it.
 
 ## Step 4 — One automation per phrase
 
