@@ -6,7 +6,8 @@ import { SensitiveValue } from '../../components/SensitiveValue'
 import { formatCurrency, formatDate } from '../../lib/format'
 import { PaymentMethodForm } from './PaymentMethodForm'
 import { PlanForm } from './PlanForm'
-import { logoPath, monogram, NEUTRAL_BRAND, providerFor } from './providers'
+import { ProviderMark } from './ProviderMark'
+import { providerFor } from './providers'
 import { useInstallments } from './useInstallments'
 import type { MethodExposure, UpcomingDue } from './types'
 
@@ -21,48 +22,6 @@ import type { MethodExposure, UpcomingDue } from './types'
 const CARD = 'rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6'
 const CARD_TITLE = 'mb-1 text-lg font-semibold text-gray-800 dark:text-white/90'
 const CARD_SUB = 'block text-gray-500 text-theme-sm dark:text-gray-400'
-
-/**
- * Brand tile. Renders the provider's supplied logo from `public/brand/` when
- * one exists, otherwise a monogram on the brand colour — a provider with no
- * artwork is a normal state, not a broken image.
- *
- * `logoFit` matters because the supplied files are not uniform: Sympl, CIB and
- * FAB Misr are square app icons carrying their own background and fill the
- * tile edge to edge, while ValU is a wide teal wordmark on white and is
- * letterboxed on its own white background instead.
- */
-function ProviderMark({ slug, label, size = 40 }: { slug: string | null; label: string; size?: number }) {
-  const provider = providerFor(slug)
-  const src = logoPath(provider)
-  const [logoFailed, setLogoFailed] = useState(false)
-  const showLogo = src !== null && !logoFailed
-  const cover = provider?.logoFit !== 'contain'
-
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-lg font-semibold text-white"
-      style={{
-        background: showLogo ? (provider?.logoBg ?? 'transparent') : (provider?.brand ?? NEUTRAL_BRAND),
-        width: size,
-        height: size,
-        fontSize: size * 0.36,
-      }}
-      aria-hidden="true"
-    >
-      {showLogo ? (
-        <img
-          src={src}
-          alt=""
-          className={cover ? 'h-full w-full object-cover' : 'h-full w-full object-contain p-1'}
-          onError={() => setLogoFailed(true)}
-        />
-      ) : (
-        monogram(label)
-      )}
-    </div>
-  )
-}
 
 function utilisationTone(pct: number): string {
   if (pct >= 100) return 'bg-error-500'

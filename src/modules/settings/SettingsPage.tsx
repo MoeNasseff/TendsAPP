@@ -315,7 +315,7 @@ function SmsAiSettings() {
 
   return (
     <Card className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Bank text parsing</h2>
+      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Bank SMS parsing</h2>
       <p className="text-xs text-slate-500 dark:text-white/50">
         When a bank or payment text can&rsquo;t be read by Tend&rsquo;s own built-in parsers, this
         sends just that message&rsquo;s text to your configured AI provider to extract the amount

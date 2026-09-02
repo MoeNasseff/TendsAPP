@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Inbox as InboxIcon } from 'lucide-react'
 import { useInbox } from '../modules/inbox/useInbox'
 import { formatCurrency } from '../lib/format'
+import { ProviderMark } from '../modules/installments/ProviderMark'
+import { providerByLabel } from '../modules/installments/providers'
 
 /** "8 min ago" — same shape as NotificationDropdown's own local helper.
  *  Duplicated rather than shared: that file keeps its own copy too, and a
@@ -55,7 +57,7 @@ export function InboxDropdown() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Bank text inbox"
+        aria-label="Bank SMS inbox"
         aria-haspopup="menu"
         aria-expanded={open}
         className="relative flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -72,7 +74,7 @@ export function InboxDropdown() {
           className="absolute right-0 z-50 mt-[17px] flex h-[480px] w-[350px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg sm:w-[361px] dark:border-gray-800 dark:bg-gray-800"
         >
           <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
-            <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90">Bank texts</h5>
+            <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90">Bank SMS</h5>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -103,9 +105,16 @@ export function InboxDropdown() {
                     onClick={() => setOpen(false)}
                     className="flex w-full gap-3 rounded-lg border-b border-gray-100 p-3 text-left hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500/10 text-brand-500 dark:text-brand-400">
-                      <InboxIcon className="h-5 w-5" />
-                    </span>
+                    {(() => {
+                      const provider = providerByLabel(message.sender_label)
+                      return provider ? (
+                        <ProviderMark slug={provider.slug} label={provider.label} size={40} shape="rounded-full" />
+                      ) : (
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-500/10 text-brand-500 dark:text-brand-400">
+                          <InboxIcon className="h-5 w-5" />
+                        </span>
+                      )
+                    })()}
                     <span className="block min-w-0">
                       <span className="mb-1.5 block truncate text-theme-sm text-gray-500 dark:text-gray-400">
                         <span className="font-medium text-gray-800 dark:text-white/90">

@@ -194,7 +194,7 @@ export function InboxPage() {
   if (!available) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader eyebrow="BANK TEXTS" title="Inbox" />
+        <PageHeader eyebrow="BANK SMS" title="Inbox" />
         <Card>
           <h3 className={CARD_TITLE}>Not set up yet</h3>
           <span className={CARD_SUB}>The SMS inbox migration has not been applied to this project.</span>
@@ -215,7 +215,7 @@ export function InboxPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader eyebrow="BANK TEXTS" title="Inbox" titleAdornment={<PrivacyToggle />} />
+      <PageHeader eyebrow="BANK SMS" title="Inbox" titleAdornment={<PrivacyToggle />} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
         <Card>

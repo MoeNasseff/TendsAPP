@@ -56,6 +56,18 @@ export function providerFor(slug: string | null): Provider | null {
   return slug ? (BY_SLUG.get(slug) ?? null) : null
 }
 
+/**
+ * Matches a free-text sender name against a provider's display label —
+ * case-insensitively, since it's meant for values like sms_inbox.sender_label
+ * ('CIB', 'FAB Misr', 'NBE' — exactly the strings the sms-ingest parsers
+ * report) rather than the canonical `slug` a form's own dropdown would give.
+ */
+export function providerByLabel(label: string | null): Provider | null {
+  if (!label) return null
+  const normalized = label.trim().toLowerCase()
+  return PROVIDERS.find((p) => p.label.toLowerCase() === normalized) ?? null
+}
+
 export function providersOfKind(kind: PaymentMethodKind): Provider[] {
   return PROVIDERS.filter((p) => p.kind === kind)
 }
