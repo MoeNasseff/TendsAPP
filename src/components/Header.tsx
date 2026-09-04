@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom'
 import { useBrand } from '../hooks/useBrand'
 import { useSidebar } from '../hooks/useSidebar'
 import { useTheme } from '../hooks/useTheme'
-import { InboxDropdown } from './InboxDropdown'
+// Hidden 2026-09-04 — the inbox button is off the header at both widths.
+// /inbox is still routed and reachable by URL; see the two commented-out
+// render sites below. Restore by uncommenting this import and both of them.
+// import { InboxDropdown } from './InboxDropdown'
 import { NotificationDropdown } from './NotificationDropdown'
 import { UserAvatar } from './UserAvatar'
 
@@ -94,7 +97,8 @@ export function Header() {
               not a notification. The element-3 copies are `hidden xl:flex`, so
               exactly one of the two is ever on screen at a given width. */}
           <div className="flex items-center gap-2 xl:hidden">
-            <InboxDropdown />
+            {/* Hidden 2026-09-04. Kept, not deleted — /inbox is still routed
+                and reachable by URL. <InboxDropdown /> */}
             <NotificationDropdown />
           </div>
 
@@ -190,18 +194,22 @@ export function Header() {
                 behind the "…" toggle, so the copies in element 2 take over —
                 see the comment there.
 
-                InboxDropdown is pending bank texts, built the same way
+                InboxDropdown was pending bank texts, built the same way
                 NotificationDropdown is (same circle chrome, same ping dot) —
                 kept as its own button rather than merged into the bell's
-                panel, so "what's due" and "what needs review" stay visually
-                distinct. /inbox is out of the sidebar for now (see
-                nav-items.ts); this is the way in.
+                panel, so "what's due" and "what needs review" stayed visually
+                distinct. **Hidden 2026-09-04 at both widths.** The component
+                and its render sites are commented out rather than deleted;
+                /inbox is still routed and reachable by typing the URL, it
+                simply has no button any more. It is also out of the sidebar
+                (see nav-items.ts), so there is currently no in-app link to it
+                at all — that is deliberate.
 
                 NotificationDropdown owns the bell, its ping dot and the panel,
                 and above sm it is the only reminder surface there is —
                 DueReminderHost's floating stack is sm:hidden. */}
             <div className="hidden items-center gap-2 2xsm:gap-3 xl:flex">
-              <InboxDropdown />
+              {/* Hidden 2026-09-04. <InboxDropdown /> */}
               <NotificationDropdown />
             </div>
           </div>
