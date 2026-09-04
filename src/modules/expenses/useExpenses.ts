@@ -2,13 +2,21 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useRealtime } from '../../hooks/useRealtime'
-import type { Expense, ExpenseCategory } from '../../lib/types'
+import type { Expense, ExpenseCategory, TransactionKind } from '../../lib/types'
 
 export interface ExpenseInput {
   amount: number
   category_id: string | null
   note: string
   spent_at: string
+  /**
+   * Optional so every existing caller — the expense form, the scanner, the
+   * seed script — keeps compiling and keeps producing purchases, which is what
+   * they all mean. The column's own `default 'purchase'` does the same job on
+   * the database side. Only the inbox, which is the one place a non-purchase
+   * can originate, ever sets this.
+   */
+  kind?: TransactionKind
 }
 
 export function useExpenses() {

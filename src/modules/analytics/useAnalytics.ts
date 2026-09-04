@@ -56,7 +56,14 @@ export function useAnalytics() {
   const load = useCallback(async () => {
     if (!user) return
     const [expRes, catRes, receiptRes, merchantRes, productRes, priceRes, itemRes] = await Promise.all([
-      supabase.from('expenses').select('*').order('spent_at', { ascending: false }),
+      // Purchases only. A `transfer` — the account debit that settles a credit
+      // card — is real money leaving a real account, but the purchases it pays
+      // for are already in this table individually. Including it would count
+      // every card purchase twice: once when it was made, once when the card
+      // was paid. Filtered at the query rather than in compute.ts so that
+      // every rollup, delta, insight and chart downstream inherits it without
+      // each one having to remember. See tasks/s35-transaction-kind.md.
+      supabase.from('expenses').select('*').eq('kind', 'purchase').order('spent_at', { ascending: false }),
       supabase.from('expense_categories').select('*').order('name'),
       supabase.from('receipts').select('*'),
       supabase.from('merchants').select('*'),

@@ -3,8 +3,30 @@ import type { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useRealtime } from '../../hooks/useRealtime'
-import type { InboxMessage } from '../../lib/types'
+import type { InboxMessage, TransactionKind } from '../../lib/types'
 import type { ExpenseInput } from '../expenses/useExpenses'
+
+/**
+ * What this message should be filed as, before the user touches anything.
+ *
+ * A paired row is decided: it matched a card-payment settlement of the same
+ * amount within ±3 days, which is not a bare amount-and-window coincidence but
+ * a match against a message shape that means one specific thing. An unpaired
+ * `transfer` suggestion is still only a suggestion — "transfer to another
+ * account" reads the same whether it paid your own card or a person — so it
+ * arrives pre-selected and the user confirms it.
+ *
+ * Exported because the page needs the same answer to render the row, and two
+ * copies of this rule would eventually disagree.
+ */
+export function suggestedKind(message: InboxMessage): TransactionKind {
+  return message.suggested_kind ?? 'purchase'
+}
+
+/** True when the classification is settled and the UI should not ask. */
+export function isKindDecided(message: InboxMessage): boolean {
+  return message.paired_inbox_id !== null
+}
 
 /**
  * Bank/payment texts awaiting review. Shaped after `useBills.ts`, with the
@@ -74,9 +96,16 @@ export function useInbox() {
       return { error: new Error('This message is money coming in, not spending — it cannot be accepted as an expense.') }
     }
 
+    // Resolved here rather than trusted from the caller, for the same reason
+    // the credit guard above lives in the hook: the rule has to hold whichever
+    // surface calls this. An explicit choice from the review UI wins; with
+    // none, the parser's own suggestion does; a row nothing classified is a
+    // purchase, which is what every non-SMS expense in the app already is.
+    const kind = input.kind ?? suggestedKind(message)
+
     const { data, error: insertError } = await supabase
       .from('expenses')
-      .insert({ user_id: user.id, ...input })
+      .insert({ user_id: user.id, ...input, kind })
       .select('id')
       .single()
     if (insertError) return { error: insertError }

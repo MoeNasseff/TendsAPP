@@ -7,6 +7,16 @@ export interface ExpenseCategory {
   created_at: string
 }
 
+/**
+ * What a row IS, as distinct from which way the money went.
+ *
+ * Only `purchase` is spending. A `transfer` — the account debit that settles a
+ * credit card — is real money leaving a real account, but it pays off a
+ * balance whose purchases were already counted individually; summing it too
+ * double-counts every one of them. Analytics and budgets sum `purchase` alone.
+ */
+export type TransactionKind = 'purchase' | 'transfer' | 'card_payment' | 'refund' | 'withdrawal'
+
 export interface Expense {
   id: string
   user_id: string
@@ -15,6 +25,7 @@ export interface Expense {
   currency: string
   note: string | null
   spent_at: string
+  kind: TransactionKind
   created_at: string
 }
 
@@ -441,6 +452,21 @@ export interface InboxMessage {
   suggested_category_id: string | null
   suggested_payment_method_id: string | null
   matched_installment_plan_id: string | null
+  /**
+   * What the matched message shape says this is. Null means no deterministic
+   * parser named a shape — an AI-parsed row, or one nothing could read — and
+   * is a different claim from `'purchase'`: it says "no parser was confident",
+   * not "this is spending". Null rows ask the user.
+   */
+  suggested_kind: TransactionKind | null
+  /**
+   * The other half of a card settlement — an account debit points at the
+   * card-payment credit it funds, and that credit points back. Non-null is the
+   * only condition under which a `transfer` is classified without asking: an
+   * unpaired account debit is a genuine guess, because a transfer to a person
+   * and real spending are textually identical.
+   */
+  paired_inbox_id: string | null
   status: InboxMessageStatus
   expense_id: string | null
   created_at: string

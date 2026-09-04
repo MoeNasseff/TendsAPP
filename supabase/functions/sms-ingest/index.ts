@@ -21,7 +21,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { aiParse } from './ai-parse.ts'
 import { enrich, matchInstallmentPlan } from './enrich.ts'
-import { runDeterministicParsers, type ParsedFields } from './parsers/index.ts'
+import { kindForShape, pairSettlement } from './kind.ts'
+import { runDeterministicParsers, type MessageShape, type ParsedFields } from './parsers/index.ts'
 
 // Keep in sync with GEMINI_DEFAULT_MODEL in src/lib/ai/gemini.ts and
 // DEFAULT_MODEL in ai-proxy/index.ts.
@@ -183,7 +184,7 @@ Deno.serve(async (req: Request) => {
   // itself a correct, reviewable outcome. Nothing in this block ever writes
   // to `expenses`.
   try {
-    await parseAndEnrich(admin, userId, inserted.id, text, senderLabel)
+    await parseAndEnrich(admin, userId, inserted.id, text, senderLabel, receivedAt)
   } catch (err) {
     console.error('sms-ingest: parse/enrich failed', err instanceof Error ? err.message : err)
   }
@@ -197,8 +198,14 @@ async function parseAndEnrich(
   rowId: string,
   text: string,
   existingSenderLabel: string | null,
+  receivedAt: string,
 ): Promise<void> {
-  let fields: (ParsedFields & { sender?: string }) | null = runDeterministicParsers(text)
+  // `shape` is optional here and required on ParsedFields because only the
+  // deterministic parsers can report one -- the AI path recognises no pattern
+  // and so names no shape. See AiParsedFields in ai-parse.ts.
+  let fields:
+    | (Omit<ParsedFields, 'shape'> & { sender?: string; shape?: MessageShape })
+    | null = runDeterministicParsers(text)
   let parseMethod: 'regex' | 'ai' | 'none' | null = fields ? 'regex' : null
   let confidence: number | null = null
 
@@ -259,6 +266,36 @@ async function parseAndEnrich(
     if (fields.direction === 'debit') {
       const planId = await matchInstallmentPlan(admin, userId, enrichment.paymentMethodId, fields.amount)
       if (planId) update.matched_installment_plan_id = planId
+    }
+
+    // What the message DESCRIBES, as distinct from which way the money went.
+    // Only set when a deterministic parser named the shape; an AI-parsed row
+    // keeps a null suggested_kind and is classified by the user, because the
+    // AI path has no pattern to reason from. See kind.ts.
+    if (fields.shape) {
+      const kind = kindForShape(fields.shape)
+      if (kind) update.suggested_kind = kind
+
+      // Link this row to the other half of a card settlement, if the other
+      // half has already arrived. Runs after suggested_kind is decided but
+      // before the write, so the pairing lands in the same update; the
+      // counterpart's own link is written by pairSettlement itself.
+      //
+      // Best-effort like everything else in this function: an unpaired row is
+      // still a correct, reviewable row -- it just asks the user instead of
+      // classifying itself.
+      try {
+        const pairedId = await pairSettlement(admin, userId, {
+          id: rowId,
+          shape: fields.shape,
+          amount: fields.amount,
+          occurredAt: fields.occurredAt,
+          receivedAt,
+        })
+        if (pairedId) update.paired_inbox_id = pairedId
+      } catch (err) {
+        console.error('sms-ingest: settlement pairing failed', err instanceof Error ? err.message : err)
+      }
     }
   }
 

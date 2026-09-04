@@ -18,7 +18,14 @@ import type { ParsedFields } from './parsers/index.ts'
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/interactions'
 
-export interface AiParsedFields extends ParsedFields {
+/**
+ * `shape` is omitted deliberately, not forgotten. A deterministic parser names
+ * the message shape it matched because it matched a specific, known pattern;
+ * the AI path recognises no pattern at all, so it has no shape to report and
+ * must not invent one. Rows it produces get a null `suggested_kind` and are
+ * classified by the user -- see kind.ts.
+ */
+export interface AiParsedFields extends Omit<ParsedFields, 'shape'> {
   confidence: number | null
 }
 

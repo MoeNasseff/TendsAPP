@@ -110,6 +110,7 @@ export function match(text: string): ParsedFields | null {
       last4,
       occurredAt: cairoIso(expandYear(yy), Number(mm), Number(dd), Number(hh), Number(mi)),
       balance: parseAmount(limit),
+      shape: 'card_charge',
     }
   }
 
@@ -124,6 +125,7 @@ export function match(text: string): ParsedFields | null {
       last4,
       occurredAt: cairoIso(expandYear(yy), Number(mm), Number(dd)),
       balance: null,
+      shape: 'card_payment',
     }
   }
 
@@ -138,6 +140,7 @@ export function match(text: string): ParsedFields | null {
       last4,
       occurredAt: cairoIso(Number(yyyy), monthFromName(mon), Number(dd)),
       balance: null,
+      shape: 'account_debit',
     }
   }
 
@@ -152,6 +155,7 @@ export function match(text: string): ParsedFields | null {
       last4,
       occurredAt: cairoIso(Number(yyyy), Number(mm), Number(dd), Number(hh), Number(mi)),
       balance: null,
+      shape: 'ipn_debit',
     }
   }
 
@@ -166,6 +170,7 @@ export function match(text: string): ParsedFields | null {
       last4,
       occurredAt: cairoIso(Number(yyyy), Number(mm), Number(dd), Number(hh), Number(mi)),
       balance: null,
+      shape: 'instant_transfer_out',
     }
   }
 
@@ -180,6 +185,7 @@ export function match(text: string): ParsedFields | null {
       last4: null,
       occurredAt: null,
       balance: null,
+      shape: 'salary_credit',
     }
   }
 

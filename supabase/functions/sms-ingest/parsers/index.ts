@@ -28,7 +28,7 @@ import { match as fab } from './fab.ts'
 import { match as nbe } from './nbe.ts'
 import type { ParsedFields } from './shared.ts'
 
-export type { ParsedFields } from './shared.ts'
+export type { MessageShape, ParsedFields } from './shared.ts'
 export { isSalaryCredit } from './cib.ts'
 
 type Parser = (text: string) => ParsedFields | null

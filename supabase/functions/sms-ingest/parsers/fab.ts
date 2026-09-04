@@ -46,5 +46,8 @@ export function match(text: string): ParsedFields | null {
     last4,
     occurredAt: cairoIso(expandYear(yy), Number(mm), Number(dd), Number(hh), Number(mi)),
     balance: parseAmount(limit),
+    // FAB Misr sends only this one transactional shape; the statement notice
+    // above is filtered out before we ever get here.
+    shape: 'card_charge',
   }
 }

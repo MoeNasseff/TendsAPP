@@ -115,6 +115,30 @@ export function cleanMerchant(raw: string | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null
 }
 
+/**
+ * Which message shape matched, named by the parser that recognised it.
+ *
+ * This is the parser reporting *what kind of event the bank described*, which
+ * is information only the pattern knows and which is otherwise thrown away the
+ * moment `match()` returns. `direction` cannot substitute for it: a card
+ * charge and an account debit funding a card payment are both `debit`, and one
+ * is spending while the other settles spending already counted. See
+ * `kind.ts` for the shape -> transaction-kind mapping.
+ *
+ * Deliberately a closed union. A new shape must be added here, which forces
+ * the mapping in `kind.ts` to be updated in the same change rather than
+ * silently defaulting a new message type into "purchase".
+ */
+export type MessageShape =
+  | 'card_charge'
+  | 'card_payment'
+  | 'account_debit'
+  | 'ipn_debit'
+  | 'instant_transfer_out'
+  | 'instant_transfer_in'
+  | 'salary_credit'
+  | 'debit_card_purchase'
+
 /** The shape every parser returns. Re-exported by parsers/index.ts. */
 export interface ParsedFields {
   direction: 'debit' | 'credit' | null
@@ -124,4 +148,5 @@ export interface ParsedFields {
   last4: string | null
   occurredAt: string | null
   balance: number | null
+  shape: MessageShape
 }

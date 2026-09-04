@@ -57,6 +57,7 @@ export function match(text: string): ParsedFields | null {
         ? cairoIso(expandYear(yy), Number(mm), Number(dd), Number(hh), Number(mi))
         : null,
       balance: parseAmount(balance),
+      shape: 'debit_card_purchase',
     }
   }
 
@@ -75,6 +76,7 @@ export function match(text: string): ParsedFields | null {
       // Month and day only — see the note above. Never guessed.
       occurredAt: null,
       balance: null,
+      shape: 'instant_transfer_in',
     }
   }
 

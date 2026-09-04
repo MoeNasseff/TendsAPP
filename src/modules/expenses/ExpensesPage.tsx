@@ -45,9 +45,22 @@ export function ExpensesPage() {
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
+  /**
+   * Every figure on this page — the month total, the average, the donut, the
+   * 30-day bars — counts purchases only. A `transfer` (the account debit that
+   * settles a credit card) is real money leaving a real account, but the
+   * purchases it pays for are already in this list one by one; adding it too
+   * counts each of them twice.
+   *
+   * The *list* below deliberately still shows everything. A transfer that
+   * happened should stay visible and editable — it is just not spending.
+   * See tasks/s35-transaction-kind.md.
+   */
+  const purchases = useMemo(() => expenses.filter((e) => e.kind === 'purchase'), [expenses])
+
   const stats = useMemo(() => {
     const now = new Date()
-    const monthExpenses = expenses.filter((e) => isSameMonth(e.spent_at, now))
+    const monthExpenses = purchases.filter((e) => isSameMonth(e.spent_at, now))
     const total = monthExpenses.reduce((s, e) => s + Number(e.amount), 0)
 
     const byCategory = new Map<string, number>()
@@ -67,7 +80,7 @@ export function ExpensesPage() {
     const avgPerDay = total / now.getDate()
 
     return { total, topCategoryName, avgPerDay, count: monthExpenses.length, byCategory }
-  }, [expenses, categoryById])
+  }, [purchases, categoryById])
 
   const donutData = useMemo(
     () =>
@@ -86,13 +99,13 @@ export function ExpensesPage() {
       const d = new Date(now)
       d.setDate(d.getDate() - i)
       const key = d.toISOString().slice(0, 10)
-      const total = expenses
+      const total = purchases
         .filter((e) => e.spent_at === key)
         .reduce((s, e) => s + Number(e.amount), 0)
       days.push({ date: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }), total })
     }
     return days
-  }, [expenses])
+  }, [purchases])
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {

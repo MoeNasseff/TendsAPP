@@ -12,9 +12,9 @@ import { SensitiveValue } from '../../components/SensitiveValue'
 import { ExpenseForm, type ExpenseDraft } from '../expenses/ExpenseForm'
 import { useExpenses } from '../expenses/useExpenses'
 import type { ExpenseInput } from '../expenses/useExpenses'
-import { useInbox } from './useInbox'
-import { formatCurrency, formatDateTime } from '../../lib/format'
-import type { InboxMessage } from '../../lib/types'
+import { isKindDecided, suggestedKind, useInbox } from './useInbox'
+import { formatCurrency, formatDate, formatDateTime } from '../../lib/format'
+import type { InboxMessage, TransactionKind } from '../../lib/types'
 
 const CARD_TITLE = 'mb-1 text-lg font-semibold text-gray-800 dark:text-white/90'
 const CARD_SUB = 'block text-gray-500 text-theme-sm dark:text-gray-400'
@@ -67,14 +67,150 @@ function DirectionBadge({ direction }: { direction: InboxMessage['parsed_directi
   )
 }
 
+/**
+ * Shown only when a row is *not* an ordinary purchase. Labelling every normal
+ * card charge "Purchase" would be noise on the majority of rows and would make
+ * the exceptional ones harder to spot, which is the opposite of the point.
+ */
+function KindBadge({ message }: { message: InboxMessage }) {
+  switch (message.suggested_kind) {
+    case 'transfer':
+      return (
+        <Badge color="warning" size="sm">
+          Transfer
+        </Badge>
+      )
+    case 'card_payment':
+      return (
+        <Badge color="light" size="sm">
+          Card payment
+        </Badge>
+      )
+    default:
+      return null
+  }
+}
+
+/**
+ * The pairing explanation: why this row is being treated as a transfer rather
+ * than as spending. Without it the classification is a number changing for an
+ * invisible reason, which in a finance app is indistinguishable from a bug.
+ *
+ * Both halves of a pair carry the link, so this renders on both and has to
+ * read correctly from either side — the account debit points *forward* to the
+ * card payment it settles, the card payment points *back* to the debit that
+ * funds it. Describing both as "matched to a card payment" would label the
+ * account's own last4 as a card number.
+ */
+function PairingNote({ message, paired }: { message: InboxMessage; paired: InboxMessage }) {
+  const when = formatDate(paired.parsed_occurred_at ?? paired.received_at)
+  const amount =
+    paired.parsed_amount !== null
+      ? formatCurrency(paired.parsed_amount, paired.parsed_currency ?? 'EGP')
+      : null
+  const where = paired.parsed_last4 ? ` …${paired.parsed_last4}` : ''
+
+  return (
+    <p className="rounded-lg bg-warning-50 px-3 py-2 text-theme-xs text-warning-600 dark:bg-warning-500/15 dark:text-orange-400">
+      {message.suggested_kind === 'card_payment' ? (
+        <>
+          Matched to the account debit that funds it — {amount ?? 'same amount'} from
+          {where || ' your account'} on {when}. Both describe one movement of money.
+        </>
+      ) : (
+        <>
+          Matched to the card payment it settles — {amount ?? 'same amount'} on card
+          {where || ' on file'} on {when}. Recorded, but kept out of spending totals: the
+          purchases it pays for are already counted one by one.
+        </>
+      )}
+    </p>
+  )
+}
+
+/**
+ * The one decision the parser cannot make for you.
+ *
+ * Three cases, and the difference between them is the whole design:
+ *
+ * - **Paired.** The row matched a card-payment settlement, which is a match
+ *   against a message shape that means one specific thing, not a bare
+ *   amount-and-window coincidence. Stated, not asked.
+ * - **Unpaired transfer.** "Transfer to another account" reads identically
+ *   whether it paid your own card or sent money to a person. Genuinely a
+ *   guess, so it asks — pre-selected as a transfer, because under-counting
+ *   spending is recoverable and over-counting is not.
+ * - **Anything else.** An ordinary purchase. No question, no control.
+ */
+function KindChoice({
+  message,
+  value,
+  onChange,
+}: {
+  message: InboxMessage
+  value: TransactionKind
+  onChange: (kind: TransactionKind) => void
+}) {
+  if (isKindDecided(message)) {
+    return (
+      <p className="mb-5 rounded-lg bg-warning-50 px-3 py-2 text-theme-xs text-warning-600 dark:bg-warning-500/15 dark:text-orange-400">
+        Recorded as a <strong>transfer</strong> — it settles a card balance, so it stays out of
+        spending totals. The purchases it pays for are already counted individually.
+      </p>
+    )
+  }
+
+  if (message.suggested_kind !== 'transfer') return null
+
+  return (
+    <fieldset className="mb-5">
+      <legend className="mb-1 text-theme-sm font-medium text-gray-800 dark:text-white/90">
+        Is this spending?
+      </legend>
+      <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
+        The text says only “transfer to another account” and never names the destination, so this
+        cannot be read from the message alone.
+      </p>
+      <div className="flex flex-col gap-2">
+        {(
+          [
+            ['transfer', 'No — moving my own money', 'Recorded, but kept out of spending totals.'],
+            ['purchase', 'Yes — this was spending', 'Counted in totals, budgets and charts.'],
+          ] as const
+        ).map(([kind, label, hint]) => (
+          <label
+            key={kind}
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 has-checked:border-brand-500 has-checked:bg-brand-50 dark:border-white/10 dark:hover:bg-white/5 dark:has-checked:bg-brand-500/10"
+          >
+            <input
+              type="radio"
+              name="transaction-kind"
+              value={kind}
+              checked={value === kind}
+              onChange={() => onChange(kind)}
+              className="mt-0.5 accent-brand-500"
+            />
+            <span className="min-w-0">
+              <span className="block text-theme-sm text-gray-800 dark:text-white/90">{label}</span>
+              <span className="block text-theme-xs text-gray-500 dark:text-gray-400">{hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
 function PendingRow({
   message,
+  paired,
   expanded,
   onToggle,
   onAccept,
   onReject,
 }: {
   message: InboxMessage
+  paired: InboxMessage | null
   expanded: boolean
   onToggle: () => void
   onAccept: () => void
@@ -91,6 +227,7 @@ function PendingRow({
             </p>
             <StatusBadge message={message} />
             <DirectionBadge direction={message.parsed_direction} />
+            <KindBadge message={message} />
           </div>
           <span className="block truncate text-gray-500 text-theme-xs dark:text-gray-400">
             {formatDateTime(message.received_at)}
@@ -123,6 +260,8 @@ function PendingRow({
           </button>
         </div>
       </div>
+
+      {paired && <PairingNote message={message} paired={paired} />}
 
       {/* The parse is only trustworthy if it can be checked against the
           source in the same place — never just the extracted numbers. */}
@@ -160,11 +299,16 @@ function ResolvedRow({ message }: { message: InboxMessage }) {
 }
 
 export function InboxPage() {
-  const { loading, available, pending, resolved, acceptMessage, rejectMessage } = useInbox()
+  const { loading, available, messages, pending, resolved, acceptMessage, rejectMessage } = useInbox()
   const { categories, addCategory } = useExpenses()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [accepting, setAccepting] = useState<InboxMessage | null>(null)
+  const [acceptKind, setAcceptKind] = useState<TransactionKind>('purchase')
   const [rejecting, setRejecting] = useState<InboxMessage | null>(null)
+
+  // Settlement pairing is stored as an id on both halves, so the counterpart
+  // is already in `messages` — no extra fetch to explain a row.
+  const messageById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages])
 
   // Captured once when Accept is clicked, not re-derived from `pending` on
   // every render — `useInbox` reloads over realtime, and a live-bound
@@ -208,7 +352,7 @@ export function InboxPage() {
 
   async function handleAcceptSubmit(input: ExpenseInput) {
     if (!accepting) return
-    const { error } = await acceptMessage(accepting, input)
+    const { error } = await acceptMessage(accepting, { ...input, kind: acceptKind })
     if (error) throw error
     setAccepting(null)
   }
@@ -242,9 +386,13 @@ export function InboxPage() {
               <PendingRow
                 key={message.id}
                 message={message}
+                paired={message.paired_inbox_id ? (messageById.get(message.paired_inbox_id) ?? null) : null}
                 expanded={expandedIds.has(message.id)}
                 onToggle={() => toggleExpanded(message.id)}
-                onAccept={() => setAccepting(message)}
+                onAccept={() => {
+                  setAcceptKind(suggestedKind(message))
+                  setAccepting(message)
+                }}
                 onReject={() => setRejecting(message)}
               />
             ))}
@@ -273,6 +421,7 @@ export function InboxPage() {
       )}
 
       <Modal open={!!accepting} onClose={() => setAccepting(null)} title="Accept as expense">
+        {accepting && <KindChoice message={accepting} value={acceptKind} onChange={setAcceptKind} />}
         <ExpenseForm
           categories={categories}
           editing={null}
