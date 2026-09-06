@@ -9,6 +9,7 @@ import { PageSkeleton } from './components/PageSkeleton'
 import { RouteError } from './components/RouteError'
 import { Login } from './pages/Login'
 import { Signup } from './pages/Signup'
+import { ResetPassword } from './pages/ResetPassword'
 import { NotFoundPage } from './pages/errors/NotFoundPage'
 import { ServerErrorPage } from './pages/errors/ServerErrorPage'
 import { MaintenancePage } from './pages/errors/MaintenancePage'
@@ -28,6 +29,9 @@ export const router = createBrowserRouter([
         errorElement: <RouteError />,
         children: [
           { path: '/login', element: <Login /> },
+          // Public on purpose: whoever lands here is mid-recovery and must not
+          // be sent through RequireAuth first.
+          { path: '/reset-password', element: <ResetPassword /> },
           { path: '/signup', element: <Signup /> },
         ],
       },
@@ -144,6 +148,13 @@ export const router = createBrowserRouter([
                 lazy: async () => {
                   const { InboxPage } = await import('./modules/inbox/InboxPage')
                   return { Component: InboxPage }
+                },
+              },
+              {
+                path: 'profile',
+                lazy: async () => {
+                  const { ProfilePage } = await import('./modules/profile/ProfilePage')
+                  return { Component: ProfilePage }
                 },
               },
               {

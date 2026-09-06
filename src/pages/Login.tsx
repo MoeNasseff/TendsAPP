@@ -85,7 +85,10 @@ export function Login() {
       return
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/`,
+      // Must be a route that actually handles the arrival. It used to be
+      // `/`, which dropped the user on the dashboard with a recovery session
+      // and no way to set a password. See src/pages/ResetPassword.tsx.
+      redirectTo: `${window.location.origin}/reset-password`,
     })
     showToast(
       error ? error.message : 'Password reset link sent — check your email.',
