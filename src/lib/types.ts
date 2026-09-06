@@ -29,6 +29,27 @@ export interface Expense {
   created_at: string
 }
 
+/**
+ * A monthly spending limit — the first prescriptive number in the schema.
+ *
+ * `category_id: null` is the overall budget, not a missing value; partial
+ * unique indexes allow exactly one open overall budget and one open budget per
+ * category. `ends_on: null` means open; editing a budget closes the old row
+ * and inserts a new one rather than mutating `amount`, so a past month's
+ * figure stays reproducible.
+ */
+export interface Budget {
+  id: string
+  user_id: string
+  category_id: string | null
+  amount: number
+  currency: string
+  period: 'monthly'
+  starts_on: string
+  ends_on: string | null
+  created_at: string
+}
+
 export interface Dog {
   id: string
   user_id: string

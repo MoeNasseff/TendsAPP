@@ -9,6 +9,7 @@ import { SensitiveValue } from '../../components/SensitiveValue'
 import { formatCurrency } from '../../lib/format'
 import { logoPath, monogram, NEUTRAL_BRAND, providerFor } from '../installments/providers'
 import { PaymentMethodForm } from '../installments/PaymentMethodForm'
+import { ProgressMeter } from '../../components/ProgressMeter'
 import { useAccounts, type MethodBalance, type UtilisationState } from './useAccounts'
 
 const CARD = 'rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6'
@@ -17,12 +18,6 @@ const CARD_SUB = 'block text-gray-500 text-theme-sm dark:text-gray-400'
 const FILTER_BTN = 'rounded-lg border px-3 py-1.5 text-theme-xs font-medium transition-colors'
 const FILTER_ON = 'border-brand-500 bg-brand-500/10 text-brand-500'
 const FILTER_OFF = 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5'
-
-function utilisationTone(pct: number): string {
-  if (pct >= 70) return 'bg-error-500'
-  if (pct >= 30) return 'bg-warning-500'
-  return 'bg-success-500'
-}
 
 /**
  * Ported from the TailAdmin finance demo's "My Cards" element
@@ -207,19 +202,7 @@ function UtilisationRow({ method, utilisation }: MethodBalance & { utilisation: 
           In credit
         </Badge>
       )}
-      {utilisation.status === 'ok' && (
-        <div className="flex w-full max-w-[140px] shrink-0 items-center gap-3">
-          <div className="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-            <div
-              className={`absolute top-0 left-0 h-full rounded-sm ${utilisationTone(utilisation.percent)}`}
-              style={{ width: `${Math.min(100, Math.max(0, utilisation.percent))}%` }}
-            />
-          </div>
-          <p className="w-10 shrink-0 text-right font-medium text-gray-800 text-theme-sm dark:text-white/90">
-            {utilisation.percent.toFixed(0)}%
-          </p>
-        </div>
-      )}
+      {utilisation.status === 'ok' && <ProgressMeter percent={utilisation.percent} />}
     </div>
   )
 }

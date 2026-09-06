@@ -63,8 +63,46 @@ function dayCountInclusive(range: DateRange): number {
   return daysBetween(range.from, range.to) + 1
 }
 
-function filterByRange(expenses: Expense[], range: DateRange): Expense[] {
+export function filterByRange(expenses: Expense[], range: DateRange): Expense[] {
   return expenses.filter((e) => e.spent_at >= range.from && e.spent_at <= range.to)
+}
+
+/**
+ * Spend measured against budgets (S34a): one total, plus a per-category
+ * breakdown keyed by `category_id`.
+ *
+ * This lives in the analytics engine rather than in `useBudgets` on purpose.
+ * The spec's headline check is that the budgets page and the analytics page
+ * agree to the piastre, and the only way to guarantee that is for both to
+ * reduce the same rows through the same code. A sum written next to the UI
+ * that consumes it will drift within a month.
+ *
+ * Note what is *not* here: any filtering by `kind`. Callers pass expenses that
+ * are already `kind='purchase'` — the same filter `useAnalytics` applies at
+ * the query — so transfers and card settlements are excluded upstream, once,
+ * rather than being re-decided by every consumer.
+ *
+ * Returns plain numbers, not `AnalyticsResult`. "You have spent nothing yet"
+ * is a true and useful answer for a budget, where for a rollup it would be an
+ * absence of data worth reporting as such.
+ */
+export function computeBudgetSpend(
+  expenses: Expense[],
+  range: DateRange,
+): { total: number; byCategory: Map<string, number> } {
+  const rows = filterByRange(expenses, range)
+  const byCategory = new Map<string, number>()
+  let total = 0
+
+  for (const e of rows) {
+    const amount = Number(e.amount)
+    total += amount
+    if (e.category_id !== null) {
+      byCategory.set(e.category_id, (byCategory.get(e.category_id) ?? 0) + amount)
+    }
+  }
+
+  return { total, byCategory }
 }
 
 function weekStartKey(iso: string): string {

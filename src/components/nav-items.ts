@@ -112,6 +112,7 @@ export const NAV_GROUPS: NavGroup[] = [
           { name: 'Analytics', path: '/analytics' },
           { name: 'Bills', path: '/bills' },
           { name: 'Accounts', path: '/accounts' },
+          { name: 'Budgets', path: '/budgets' },
           // Deliberately hidden from the sidebar — the header's InboxDropdown
           // (see Header.tsx) is the way in for now. The route at /inbox is
           // untouched; uncomment this row to bring the sidebar link back.
